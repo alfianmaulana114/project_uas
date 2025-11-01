@@ -9,9 +9,14 @@ import '../datasources/auth_remote_datasource.dart';
 /// Mengikuti konsep Clean Architecture - Data Layer
 /// Menggunakan dependency injection untuk AuthRemoteDatasource
 /// Convert exceptions ke failures (Domain Layer pattern)
+/// 
+/// PENTING: Tidak ada local storage atau cache mechanism
+/// Semua data langsung ke Supabase (online database)
+/// State user hanya disimpan di memory (Provider), tidak persist
 class AuthRepositoryImpl implements AuthRepository {
   /// Instance dari AuthRemoteDatasource
   /// Menggunakan dependency injection untuk loose coupling
+  /// Hanya menggunakan remote datasource (Supabase), tidak ada local datasource
   final AuthRemoteDatasource remoteDatasource;
 
   /// Constructor untuk AuthRepositoryImpl

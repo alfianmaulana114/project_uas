@@ -8,6 +8,11 @@ import '../../domain/usecases/get_current_user_usecase.dart';
 /// AuthProvider untuk mengelola state authentication
 /// Menggunakan ChangeNotifier untuk state management
 /// Mengikuti konsep Provider pattern dan Single Responsibility Principle
+/// 
+/// PENTING: State hanya disimpan di memory, TIDAK ADA PERSISTENCE
+/// Data user tidak disimpan di local storage atau cache
+/// Semua data langsung dari Supabase (online database)
+/// Setelah app di-close, state akan hilang dan harus fetch ulang dari Supabase
 class AuthProvider extends ChangeNotifier {
   /// Instance dari SignInUsecase
   final SignInUsecase signInUsecase;
@@ -22,6 +27,7 @@ class AuthProvider extends ChangeNotifier {
   final GetCurrentUserUsecase getCurrentUserUsecase;
 
   /// Current user yang sedang login
+  /// Hanya disimpan di memory, tidak persist ke local storage
   AuthUser? _currentUser;
 
   /// Error message jika terjadi error

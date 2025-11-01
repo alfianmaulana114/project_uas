@@ -15,8 +15,8 @@ void main() async {
   try {
     /// Inisialisasi Supabase dengan URL dan API key
     await SupabaseConfig.init(
-      supabaseUrl: 'https://ksizwnhqotjwcaapxoeq.supabase.co',
-      supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzaXp3bmhxb3Rqd2NhYXB4b2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4NzMyODQsImV4cCI6MjA3NzQ0OTI4NH0.k9aLRot8vN8oA62VAkYpA_lgss2rO0O6LL7Q9CnTdMY',
+      supabaseUrl: 'https://zetqkryzixfxkjubejbw.supabase.co',
+      supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpldHFrcnl6aXhmeGtqdWJlamJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMDU4NTksImV4cCI6MjA3NzU4MTg1OX0.8FlCSWLBc7_bgpvYA7dIs5jRwtBVC71oNnFvyLdWYsc',
     );
   } catch (e) {
     /// Log error jika Supabase gagal diinisialisasi
