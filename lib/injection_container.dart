@@ -7,6 +7,13 @@ import 'features/authentication/domain/usecases/sign_up_usecase.dart';
 import 'features/authentication/domain/usecases/sign_out_usecase.dart';
 import 'features/authentication/domain/usecases/get_current_user_usecase.dart';
 import 'features/authentication/presentation/providers/auth_provider.dart';
+import 'features/challenge/data/datasources/challenge_remote_datasource.dart';
+import 'features/challenge/data/repositories/challenge_repository_impl.dart';
+import 'features/challenge/domain/repositories/challenge_repository.dart';
+import 'features/challenge/domain/usecases/get_all_challenges_usecase.dart';
+import 'features/challenge/domain/usecases/get_active_challenge_usecase.dart';
+import 'features/challenge/domain/usecases/start_challenge_usecase.dart';
+import 'features/challenge/presentation/providers/challenge_provider.dart';
 
 /// Service Locator menggunakan GetIt
 /// Mengikuti konsep Dependency Injection (SOLID - Dependency Inversion Principle)
@@ -24,12 +31,24 @@ Future<void> init() async {
     () => AuthRemoteDatasourceImpl(),
   );
 
+  /// Challenge Remote Datasource
+  sl.registerLazySingleton<ChallengeRemoteDatasource>(
+    () => ChallengeRemoteDatasourceImpl(),
+  );
+
   // ============ Repositories ============
   /// Register AuthRepository dengan implementasinya
   /// Menggunakan AuthRemoteDatasource yang sudah di-register sebelumnya
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
       sl<AuthRemoteDatasource>(),
+    ),
+  );
+
+  /// Challenge Repository
+  sl.registerLazySingleton<ChallengeRepository>(
+    () => ChallengeRepositoryImpl(
+      sl<ChallengeRemoteDatasource>(),
     ),
   );
 
@@ -58,6 +77,17 @@ Future<void> init() async {
     () => GetCurrentUserUsecase(sl<AuthRepository>()),
   );
 
+  /// Challenge Use Cases
+  sl.registerLazySingleton(
+    () => GetAllChallengesUsecase(sl<ChallengeRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetActiveChallengeUsecase(sl<ChallengeRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => StartChallengeUsecase(sl<ChallengeRepository>()),
+  );
+
   // ============ Providers ============
   /// Register AuthProvider sebagai factory
   /// Factory berarti setiap kali dipanggil akan membuat instance baru
@@ -68,6 +98,15 @@ Future<void> init() async {
       signUpUsecase: sl<SignUpUsecase>(),
       signOutUsecase: sl<SignOutUsecase>(),
       getCurrentUserUsecase: sl<GetCurrentUserUsecase>(),
+    ),
+  );
+
+  /// Challenge Provider
+  sl.registerFactory(
+    () => ChallengeProvider(
+      getAllChallengesUsecase: sl<GetAllChallengesUsecase>(),
+      getActiveChallengeUsecase: sl<GetActiveChallengeUsecase>(),
+      startChallengeUsecase: sl<StartChallengeUsecase>(),
     ),
   );
 }

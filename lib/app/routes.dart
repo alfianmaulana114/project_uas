@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../features/authentication/presentation/screens/onboarding_screen.dart';
 import '../features/authentication/presentation/screens/login_screen.dart';
 import '../features/authentication/presentation/screens/register_screen.dart';
+import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 
 /// App Routes Configuration
 /// Mengikuti konsep Single Responsibility Principle
@@ -32,12 +33,8 @@ class AppRoutes {
       /// Register screen
       register: (context) => const RegisterScreen(),
 
-      /// Dashboard screen (placeholder - akan diimplementasikan nanti)
-      dashboard: (context) => const Scaffold(
-            body: Center(
-              child: Text('Dashboard Screen'),
-            ),
-          ),
+      /// Dashboard screen
+      dashboard: (context) => const DashboardScreen(),
     };
   }
 

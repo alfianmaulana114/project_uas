@@ -5,6 +5,7 @@ import 'injection_container.dart' as di;
 import 'app/routes.dart';
 import 'app/theme.dart';
 import 'features/authentication/presentation/providers/auth_provider.dart';
+import 'features/challenge/presentation/providers/challenge_provider.dart';
 
 /// Main entry point aplikasi
 /// Mengikuti konsep Single Responsibility Principle
@@ -46,6 +47,10 @@ class MyApp extends StatelessWidget {
         /// AuthProvider untuk mengelola authentication state
         ChangeNotifierProvider(
           create: (_) => di.sl<AuthProvider>(),
+        ),
+        /// ChallengeProvider untuk fitur Challenge
+        ChangeNotifierProvider(
+          create: (_) => di.sl<ChallengeProvider>(),
         ),
       ],
       child: MaterialApp(
