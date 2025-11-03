@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../presentation/providers/challenge_provider.dart';
+import '../providers/challenge_provider.dart';
 import '../widgets/challenge_card.dart';
 import '../widgets/active_challenge_card.dart';
 
+/// Challenge List Screen
+/// Screen untuk menampilkan daftar semua challenges dan active challenges
+/// Mengikuti konsep Single Responsibility Principle
 class ChallengeListScreen extends StatefulWidget {
+  /// Constructor untuk ChallengeListScreen
   const ChallengeListScreen({super.key});
 
   @override

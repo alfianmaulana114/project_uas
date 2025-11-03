@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../challenge/domain/entities/user_challenge.dart';
+import '../../domain/entities/user_challenge.dart';
 import 'progress_bar.dart';
+
+/// Active Challenge Card Widget
+/// Widget untuk menampilkan card challenge yang sedang aktif
+/// Mengikuti konsep Single Responsibility Principle
 
 class ActiveChallengeCard extends StatelessWidget {
   final UserChallenge userChallenge;
@@ -8,10 +12,17 @@ class ActiveChallengeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    /// Hitung total hari challenge
+    /// Jika endDate null, gunakan currentDay sebagai estimasi
     final totalDays = userChallenge.endDate == null
         ? userChallenge.currentDay
         : (userChallenge.endDate!.difference(userChallenge.startDate).inDays + 1).clamp(1, 3650);
-    final percent = (userChallenge.currentDay / totalDays).clamp(0.0, 1.0);
+
+    /// Hitung progress percentage
+    /// Progress = currentDay / totalDays
+    final percent = totalDays > 0
+        ? (userChallenge.currentDay / totalDays).clamp(0.0, 1.0)
+        : 0.0;
 
     return Card(
       color: Theme.of(context).colorScheme.primary.withOpacity(0.06),
@@ -29,7 +40,10 @@ class ActiveChallengeCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            ProgressBar(value: percent),
+            ProgressBar(
+              value: percent,
+              showLabel: true,
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,

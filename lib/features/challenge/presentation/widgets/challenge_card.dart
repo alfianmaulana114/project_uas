@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../challenge/domain/entities/challenge.dart';
-import '../../presentation/providers/challenge_provider.dart';
+import '../../domain/entities/challenge.dart';
+import '../providers/challenge_provider.dart';
+
+/// Challenge Card Widget
+/// Widget untuk menampilkan card challenge dengan informasi lengkap
+/// Mengikuti konsep Single Responsibility Principle
 
 class ChallengeCard extends StatelessWidget {
   final Challenge challenge;
