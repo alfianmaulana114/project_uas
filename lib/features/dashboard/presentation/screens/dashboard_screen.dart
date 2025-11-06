@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../challenge/presentation/providers/challenge_provider.dart';
 import '../../../challenge/presentation/screens/challenge_list_screen.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -48,6 +49,16 @@ class _HomeTab extends StatelessWidget {
             const SizedBox(height: 8),
             Consumer<ChallengeProvider>(
               builder: (ctx, p, _) => Text('Challenge aktif: ${p.activeChallenges.length}'),
+            ),
+            const SizedBox(height: 8),
+            Consumer<AuthProvider>(
+              builder: (ctx, a, _) => Column(
+                children: [
+                  Text('Streak saat ini: ${a.currentUser?.currentStreak ?? 0}'),
+                  Text('Longest streak: ${a.currentUser?.longestStreak ?? 0}'),
+                  Text('Total poin: ${a.currentUser?.totalPoints ?? 0}'),
+                ],
+              ),
             ),
           ],
         ),

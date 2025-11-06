@@ -76,3 +76,18 @@ Script juga membuat:
 2. **ID di tabel users harus sama dengan ID di auth.users** - Ini dilakukan via foreign key constraint
 3. **Trigger auto-create profile** - Saat user signup via Supabase Auth, profil akan otomatis dibuat di tabel users
 
+
+## ➕ Fitur Tambahan: Check-In Harian
+
+Untuk mengaktifkan fitur check-in harian dan RPC yang dipanggil dari aplikasi, jalankan script berikut:
+
+1. Buka **Supabase Dashboard** → **SQL Editor**
+2. Copy semua isi dari file `setup_checkin_rpc.sql`
+3. Paste dan klik **Run**
+4. Jalankan query `NOTIFY pgrst, 'reload schema';` untuk refresh schema
+
+Script ini akan:
+- Membuat tabel `checkins` dengan unique (user_challenge_id, checkin_date)
+- Membuat fungsi `rpc_check_in` yang meng-update: progress challenge, streak user, dan poin
+- Mengembalikan JSON berisi snapshot challenge dan statistik user
+

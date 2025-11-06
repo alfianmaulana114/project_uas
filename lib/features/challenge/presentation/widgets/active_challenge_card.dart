@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../challenge/domain/entities/user_challenge.dart';
+import '../../presentation/providers/challenge_provider.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
 import 'progress_bar.dart';
 
 class ActiveChallengeCard extends StatelessWidget {
@@ -8,6 +11,7 @@ class ActiveChallengeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<ChallengeProvider>().isLoading;
     final totalDays = userChallenge.endDate == null
         ? userChallenge.currentDay
         : (userChallenge.endDate!.difference(userChallenge.startDate).inDays + 1).clamp(1, 3650);
@@ -38,6 +42,55 @@ class ActiveChallengeCard extends StatelessWidget {
                 Chip(label: Text('Sukses ${userChallenge.successDays}')),
                 if (userChallenge.bookName != null) Chip(label: Text('Buku: ${userChallenge.bookName}')),
                 if (userChallenge.eventName != null) Chip(label: Text('Event: ${userChallenge.eventName}')),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.thumb_up_outlined),
+                    label: const Text('Mark Success'),
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            final p = context.read<ChallengeProvider>();
+                            final res = await p.checkIn(
+                                userChallengeId: userChallenge.id, isSuccess: true);
+                            if (res == null) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(p.error ?? 'Gagal check-in')),
+                                );
+                              }
+                              return;
+                            }
+                            // Update user stats in AuthProvider
+                            context.read<AuthProvider>().applyStatsUpdate(
+                                  currentStreak: res.currentStreak,
+                                  longestStreak: res.longestStreak,
+                                  totalPoints: res.totalPoints,
+                                );
+                            if (context.mounted) {
+                              if (res.alreadyCheckedInToday) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Sudah check-in hari ini')),
+                                );
+                              } else if (res.challengeCompleted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          'Challenge selesai! +${res.pointsAwarded} poin')),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Berhasil untuk hari ini. Lanjutkan lagi besok.')),
+                                );
+                              }
+                            }
+                          },
+                  ),
+                ),
               ],
             ),
           ],

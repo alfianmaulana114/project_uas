@@ -13,6 +13,7 @@ import 'features/challenge/domain/repositories/challenge_repository.dart';
 import 'features/challenge/domain/usecases/get_all_challenges_usecase.dart';
 import 'features/challenge/domain/usecases/get_active_challenge_usecase.dart';
 import 'features/challenge/domain/usecases/start_challenge_usecase.dart';
+import 'features/challenge/domain/usecases/check_in_usecase.dart';
 import 'features/challenge/presentation/providers/challenge_provider.dart';
 
 /// Service Locator menggunakan GetIt
@@ -87,6 +88,9 @@ Future<void> init() async {
   sl.registerLazySingleton(
     () => StartChallengeUsecase(sl<ChallengeRepository>()),
   );
+  sl.registerLazySingleton(
+    () => CheckInUsecase(sl<ChallengeRepository>()),
+  );
 
   // ============ Providers ============
   /// Register AuthProvider sebagai factory
@@ -107,6 +111,7 @@ Future<void> init() async {
       getAllChallengesUsecase: sl<GetAllChallengesUsecase>(),
       getActiveChallengeUsecase: sl<GetActiveChallengeUsecase>(),
       startChallengeUsecase: sl<StartChallengeUsecase>(),
+      checkInUsecase: sl<CheckInUsecase>(),
     ),
   );
 }
