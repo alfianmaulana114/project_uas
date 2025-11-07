@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../analytics/presentation/screens/analytics_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../challenge/presentation/providers/challenge_provider.dart';
 import '../../../challenge/presentation/screens/challenge_list_screen.dart';
@@ -19,6 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final pages = <Widget>[
       const _HomeTab(),
       const ChallengeListScreen(),
+      const AnalyticsScreen(),
     ];
 
     return Scaffold(
@@ -29,6 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.flag_outlined), selectedIcon: Icon(Icons.flag), label: 'Challenge'),
+          NavigationDestination(icon: Icon(Icons.insights_outlined), selectedIcon: Icon(Icons.insights), label: 'Analytics'),
         ],
       ),
     );

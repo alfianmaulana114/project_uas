@@ -3,6 +3,8 @@ import '../features/authentication/presentation/screens/onboarding_screen.dart';
 import '../features/authentication/presentation/screens/login_screen.dart';
 import '../features/authentication/presentation/screens/register_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../features/reward/presentation/screens/achievements_screen.dart';
+import '../features/analytics/presentation/screens/analytics_screen.dart';
 
 /// App Routes Configuration
 /// Mengikuti konsep Single Responsibility Principle
@@ -19,6 +21,10 @@ class AppRoutes {
 
   /// Route name untuk dashboard screen (placeholder)
   static const String dashboard = '/dashboard';
+  /// Route name untuk achievements screen
+  static const String achievements = '/achievements';
+  /// Route name untuk analytics screen
+  static const String analytics = '/analytics';
 
   /// Method untuk mendapatkan routes map
   /// Mengembalikan Map<String, WidgetBuilder> untuk MaterialApp routes
@@ -35,6 +41,12 @@ class AppRoutes {
 
       /// Dashboard screen
       dashboard: (context) => const DashboardScreen(),
+
+      /// Achievements screen
+      achievements: (context) => const AchievementsScreen(),
+
+      /// Analytics screen
+      analytics: (context) => const AnalyticsScreen(),
     };
   }
 

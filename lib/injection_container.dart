@@ -15,6 +15,19 @@ import 'features/challenge/domain/usecases/get_active_challenge_usecase.dart';
 import 'features/challenge/domain/usecases/start_challenge_usecase.dart';
 import 'features/challenge/domain/usecases/check_in_usecase.dart';
 import 'features/challenge/presentation/providers/challenge_provider.dart';
+import 'features/reward/data/datasources/reward_remote_datasource.dart';
+import 'features/reward/data/repositories/reward_repository_impl.dart';
+import 'features/reward/domain/repositories/reward_repository.dart';
+import 'features/reward/domain/usecases/get_all_achievements_usecase.dart';
+import 'features/reward/domain/usecases/get_user_achievements_usecase.dart';
+import 'features/reward/domain/usecases/check_achievements_usecase.dart';
+import 'features/reward/presentation/providers/reward_provider.dart';
+import 'features/analytics/data/datasources/analytics_remote_datasource.dart';
+import 'features/analytics/data/repositories/analytics_repository_impl.dart';
+import 'features/analytics/domain/repositories/analytics_repository.dart';
+import 'features/analytics/domain/usecases/get_user_stats_usecase.dart';
+import 'features/analytics/domain/usecases/get_weekly_checkins_usecase.dart';
+import 'features/analytics/presentation/providers/analytics_provider.dart';
 
 /// Service Locator menggunakan GetIt
 /// Mengikuti konsep Dependency Injection (SOLID - Dependency Inversion Principle)
@@ -37,6 +50,16 @@ Future<void> init() async {
     () => ChallengeRemoteDatasourceImpl(),
   );
 
+  /// Reward Remote Datasource
+  sl.registerLazySingleton<RewardRemoteDatasource>(
+    () => RewardRemoteDatasourceImpl(),
+  );
+
+  /// Analytics Remote Datasource
+  sl.registerLazySingleton<AnalyticsRemoteDataSource>(
+    () => AnalyticsRemoteDataSourceImpl(),
+  );
+
   // ============ Repositories ============
   /// Register AuthRepository dengan implementasinya
   /// Menggunakan AuthRemoteDatasource yang sudah di-register sebelumnya
@@ -50,6 +73,20 @@ Future<void> init() async {
   sl.registerLazySingleton<ChallengeRepository>(
     () => ChallengeRepositoryImpl(
       sl<ChallengeRemoteDatasource>(),
+    ),
+  );
+
+  /// Reward Repository
+  sl.registerLazySingleton<RewardRepository>(
+    () => RewardRepositoryImpl(
+      sl<RewardRemoteDatasource>(),
+    ),
+  );
+
+  /// Analytics Repository
+  sl.registerLazySingleton<AnalyticsRepository>(
+    () => AnalyticsRepositoryImpl(
+      sl<AnalyticsRemoteDataSource>(),
     ),
   );
 
@@ -92,6 +129,25 @@ Future<void> init() async {
     () => CheckInUsecase(sl<ChallengeRepository>()),
   );
 
+  /// Reward Use Cases
+  sl.registerLazySingleton(
+    () => GetAllAchievementsUsecase(sl<RewardRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetUserAchievementsUsecase(sl<RewardRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => CheckAchievementsUsecase(sl<RewardRepository>()),
+  );
+
+  /// Analytics Use Cases
+  sl.registerLazySingleton(
+    () => GetUserStatsUsecase(sl<AnalyticsRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetWeeklyCheckInsUsecase(sl<AnalyticsRepository>()),
+  );
+
   // ============ Providers ============
   /// Register AuthProvider sebagai factory
   /// Factory berarti setiap kali dipanggil akan membuat instance baru
@@ -112,6 +168,24 @@ Future<void> init() async {
       getActiveChallengeUsecase: sl<GetActiveChallengeUsecase>(),
       startChallengeUsecase: sl<StartChallengeUsecase>(),
       checkInUsecase: sl<CheckInUsecase>(),
+    ),
+  );
+
+  /// Reward Provider
+  sl.registerFactory(
+    () => RewardProvider(
+      getAllAchievementsUsecase: sl<GetAllAchievementsUsecase>(),
+      getUserAchievementsUsecase: sl<GetUserAchievementsUsecase>(),
+      checkAchievementsUsecase: sl<CheckAchievementsUsecase>(),
+      authProvider: sl<AuthProvider>(),
+    ),
+  );
+
+  /// Analytics Provider
+  sl.registerFactory(
+    () => AnalyticsProvider(
+      getUserStatsUsecase: sl<GetUserStatsUsecase>(),
+      getWeeklyCheckInsUsecase: sl<GetWeeklyCheckInsUsecase>(),
     ),
   );
 }

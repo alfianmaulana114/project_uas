@@ -53,23 +53,28 @@ returns jsonb
 language plpgsql
 as $$
 declare
-  v_uc record;
-  v_user record;
+  v_uc public.user_challenges%ROWTYPE;
+  v_user public.users%ROWTYPE;
   v_points_awarded int := 0;
   v_completed boolean := false;
   v_total_days int := 0;
   v_reward int := 0;
 begin
-  -- Validate challenge exists and is active
-  select uc.*, u.total_points, u.current_streak, u.longest_streak
+  -- Validate challenge exists and is active (fetch challenge row only)
+  select *
     into v_uc
     from public.user_challenges uc
-    join public.users u on u.id = uc.user_id
    where uc.id = p_user_challenge_id
      and uc.status = 'active';
 
   if not found then
     raise exception 'Tidak ada challenge aktif untuk check-in' using errcode = 'P0001';
+  end if;
+
+  -- Fetch user row separately to avoid record field mismatch
+  select * into v_user from public.users u where u.id = v_uc.user_id;
+  if not found then
+    raise exception 'User tidak ditemukan untuk challenge ini' using errcode = 'P0001';
   end if;
 
   -- Prevent double check-in per day
@@ -92,14 +97,14 @@ begin
    where id = p_user_challenge_id
    returning * into v_uc;
 
-  -- Update streaks
+  -- Update streaks (use v_user fields)
   update public.users
-     set current_streak = case when p_is_success then v_uc.current_streak + 1 else 0 end,
+     set current_streak = case when p_is_success then coalesce(v_user.current_streak, 0) + 1 else 0 end,
          longest_streak = greatest(
-            case when p_is_success then v_uc.current_streak + 1 else 0 end,
-            v_uc.longest_streak
+            case when p_is_success then coalesce(v_user.current_streak, 0) + 1 else 0 end,
+            coalesce(v_user.longest_streak, 0)
          )
-   where id = v_uc.user_id
+   where id = v_user.id
    returning * into v_user;
 
   -- Check completion and award points from master challenge

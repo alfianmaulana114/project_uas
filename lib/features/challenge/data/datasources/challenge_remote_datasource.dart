@@ -113,7 +113,7 @@ class ChallengeRemoteDatasourceImpl implements ChallengeRemoteDatasource {
         throw AuthException('Tidak ada challenge aktif untuk check-in');
       }
       // Fallback: jika rpc_check_in belum terpasang di Supabase (PGRST202), gunakan rpc_log_daily_progress
-      if (msg.contains('pgrst202') || msg.contains('could not find the function public.rpc_check_in')) {
+      if (msg.contains('pgrst202') || msg.contains('could not find the function public.rpc_check_in') || msg.contains('code: 42703')) {
         try {
           final res2 = await SupabaseConfig.client.rpc(
             'rpc_log_daily_progress',

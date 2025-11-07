@@ -6,6 +6,8 @@ import 'app/routes.dart';
 import 'app/theme.dart';
 import 'features/authentication/presentation/providers/auth_provider.dart';
 import 'features/challenge/presentation/providers/challenge_provider.dart';
+import 'features/reward/presentation/providers/reward_provider.dart';
+import 'features/analytics/presentation/providers/analytics_provider.dart';
 
 /// Main entry point aplikasi
 /// Mengikuti konsep Single Responsibility Principle
@@ -51,6 +53,19 @@ class MyApp extends StatelessWidget {
         /// ChallengeProvider untuk fitur Challenge
         ChangeNotifierProvider(
           create: (_) => di.sl<ChallengeProvider>(),
+        ),
+        /// RewardProvider untuk fitur Poin & Achievement
+        ChangeNotifierProvider(
+          create: (context) => RewardProvider(
+            getAllAchievementsUsecase: di.sl(),
+            getUserAchievementsUsecase: di.sl(),
+            checkAchievementsUsecase: di.sl(),
+            authProvider: context.read<AuthProvider>(),
+          ),
+        ),
+        /// AnalyticsProvider untuk fitur Analytics
+        ChangeNotifierProvider(
+          create: (_) => di.sl<AnalyticsProvider>(),
         ),
       ],
       child: MaterialApp(

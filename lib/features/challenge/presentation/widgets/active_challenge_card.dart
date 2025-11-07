@@ -4,6 +4,8 @@ import '../../../challenge/domain/entities/user_challenge.dart';
 import '../../presentation/providers/challenge_provider.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import 'progress_bar.dart';
+import '../../../reward/presentation/providers/reward_provider.dart';
+import '../../../reward/presentation/widgets/achievement_unlock_dialog.dart';
 
 class ActiveChallengeCard extends StatelessWidget {
   final UserChallenge userChallenge;
@@ -12,6 +14,7 @@ class ActiveChallengeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<ChallengeProvider>().isLoading;
+    final hasCheckedToday = context.watch<ChallengeProvider>().hasCheckedInToday(userChallenge.id);
     final totalDays = userChallenge.endDate == null
         ? userChallenge.currentDay
         : (userChallenge.endDate!.difference(userChallenge.startDate).inDays + 1).clamp(1, 3650);
@@ -51,7 +54,7 @@ class ActiveChallengeCard extends StatelessWidget {
                   child: FilledButton.icon(
                     icon: const Icon(Icons.thumb_up_outlined),
                     label: const Text('Mark Success'),
-                    onPressed: isLoading
+                    onPressed: (isLoading || hasCheckedToday)
                         ? null
                         : () async {
                             final p = context.read<ChallengeProvider>();
@@ -71,6 +74,17 @@ class ActiveChallengeCard extends StatelessWidget {
                                   longestStreak: res.longestStreak,
                                   totalPoints: res.totalPoints,
                                 );
+                            // Check and award achievements after a check-in or completion
+                            final rewards = await context
+                                .read<RewardProvider>()
+                                .checkAfterEvent(
+                                    trigger: res.challengeCompleted ? 'challenge_completed' : 'checkin');
+                            if (context.mounted && rewards.isNotEmpty) {
+                              await showDialog(
+                                context: context,
+                                builder: (_) => AchievementUnlockDialog(achievements: rewards),
+                              );
+                            }
                             if (context.mounted) {
                               if (res.alreadyCheckedInToday) {
                                 ScaffoldMessenger.of(context).showSnackBar(

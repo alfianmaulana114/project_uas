@@ -25,6 +25,9 @@ class ChallengeProvider extends ChangeNotifier {
   String? _error;
   bool _loading = false;
   String? _selectedCategory; // null = all
+  // Track last check-in date per active challenge to disable button until tomorrow
+  final Map<String, DateTime> _lastCheckInDate = {};
+  DateTime _lastMidnight = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
   List<Challenge> get challenges => List.unmodifiable(_challenges);
   List<UserChallenge> get activeChallenges => List.unmodifiable(_active);
@@ -32,7 +35,23 @@ class ChallengeProvider extends ChangeNotifier {
   bool get isLoading => _loading;
   String? get selectedCategory => _selectedCategory;
 
+  bool hasCheckedInToday(String userChallengeId) {
+    final d = _lastCheckInDate[userChallengeId];
+    if (d == null) return false;
+    final now = DateTime.now();
+    return d.year == now.year && d.month == now.month && d.day == now.day;
+  }
+
+  void _rolloverIfNewDay() {
+    final nowMidnight = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    if (nowMidnight.isAfter(_lastMidnight)) {
+      _lastMidnight = nowMidnight;
+      _lastCheckInDate.clear();
+    }
+  }
+
   Future<void> load({String? category}) async {
+    _rolloverIfNewDay();
     _loading = true;
     _error = null;
     _selectedCategory = category;
@@ -125,6 +144,9 @@ class ChallengeProvider extends ChangeNotifier {
 
     // Apply state updates
     if (result != null) {
+      // Mark as checked-in today (even if server says already checked-in)
+      _lastCheckInDate[userChallengeId] = DateTime.now();
+
       // Replace updated challenge in active list or remove if completed
       final updated = _active[idx];
       final updatedChallenge = UserChallenge(

@@ -129,9 +129,9 @@ CREATE TABLE IF NOT EXISTS public.user_challenges (
   completed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   CONSTRAINT chk_book_name_required
-    CHECK (category <> 'membaca_buku' OR (book_name IS NOT NULL AND length(trim(book_name)) > 0)),
+    CHECK (category <> 'membaca_buku'::challenge_category OR (book_name IS NOT NULL AND length(trim(book_name)) > 0)),
   CONSTRAINT chk_event_name_required
-    CHECK (category <> 'bersosialisasi' OR (event_name IS NOT NULL AND length(trim(event_name)) > 0))
+    CHECK (category <> 'bersosialisasi'::challenge_category OR (event_name IS NOT NULL AND length(trim(event_name)) > 0))
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_challenges_user
@@ -143,7 +143,20 @@ CREATE INDEX IF NOT EXISTS idx_user_challenges_status
 CREATE INDEX IF NOT EXISTS idx_user_challenges_user_category
   ON public.user_challenges (user_id, category);
 
--- Prevent >1 active per category per user
+-- Prevent >1 active per category per user-- Hapus constraint lama yang membandingkan enum dengan string biasa
+ALTER TABLE public.user_challenges DROP CONSTRAINT IF EXISTS chk_book_name_required;
+ALTER TABLE public.user_challenges DROP CONSTRAINT IF EXISTS chk_event_name_required;
+
+-- Buat ulang dengan casting ke enum
+ALTER TABLE public.user_challenges
+  ADD CONSTRAINT chk_book_name_required
+  CHECK (category <> 'membaca_buku'::challenge_category
+         OR (book_name IS NOT NULL AND length(trim(book_name)) > 0));
+
+ALTER TABLE public.user_challenges
+  ADD CONSTRAINT chk_event_name_required
+  CHECK (category <> 'bersosialisasi'::challenge_category
+         OR (event_name IS NOT NULL AND length(trim(event_name)) > 0));
 CREATE UNIQUE INDEX IF NOT EXISTS uq_active_category_per_user
   ON public.user_challenges (user_id, category)
   WHERE status = 'active';
