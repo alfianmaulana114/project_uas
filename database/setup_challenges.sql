@@ -129,9 +129,9 @@ CREATE TABLE IF NOT EXISTS public.user_challenges (
   completed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   CONSTRAINT chk_book_name_required
-    CHECK (category <> 'membaca_buku' OR (book_name IS NOT NULL AND length(trim(book_name)) > 0)),
+    CHECK (category <> 'membaca_buku'::challenge_category OR (book_name IS NOT NULL AND length(trim(book_name)) > 0)),
   CONSTRAINT chk_event_name_required
-    CHECK (category <> 'bersosialisasi' OR (event_name IS NOT NULL AND length(trim(event_name)) > 0))
+    CHECK (category <> 'bersosialisasi'::challenge_category OR (event_name IS NOT NULL AND length(trim(event_name)) > 0))
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_challenges_user
@@ -143,7 +143,20 @@ CREATE INDEX IF NOT EXISTS idx_user_challenges_status
 CREATE INDEX IF NOT EXISTS idx_user_challenges_user_category
   ON public.user_challenges (user_id, category);
 
--- Prevent >1 active per category per user
+-- Prevent >1 active per category per user-- Hapus constraint lama yang membandingkan enum dengan string biasa
+ALTER TABLE public.user_challenges DROP CONSTRAINT IF EXISTS chk_book_name_required;
+ALTER TABLE public.user_challenges DROP CONSTRAINT IF EXISTS chk_event_name_required;
+
+-- Buat ulang dengan casting ke enum
+ALTER TABLE public.user_challenges
+  ADD CONSTRAINT chk_book_name_required
+  CHECK (category <> 'membaca_buku'::challenge_category
+         OR (book_name IS NOT NULL AND length(trim(book_name)) > 0));
+
+ALTER TABLE public.user_challenges
+  ADD CONSTRAINT chk_event_name_required
+  CHECK (category <> 'bersosialisasi'::challenge_category
+         OR (event_name IS NOT NULL AND length(trim(event_name)) > 0));
 CREATE UNIQUE INDEX IF NOT EXISTS uq_active_category_per_user
   ON public.user_challenges (user_id, category)
   WHERE status = 'active';
@@ -275,11 +288,29 @@ CREATE OR REPLACE FUNCTION public.rpc_get_active_user_challenges(
   p_category public.challenge_category DEFAULT NULL
 )
 RETURNS SETOF public.user_challenges
-LANGUAGE sql STABLE SECURITY DEFINER AS $$
-  SELECT uc.* FROM public.user_challenges uc
-  WHERE uc.user_id = auth.uid() AND uc.status = 'active'
-    AND (p_category IS NULL OR uc.category::text = p_category::text)
-  ORDER BY uc.created_at DESC;
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_user UUID := auth.uid();
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+
+  -- Evaluasi expired: jika user melewatkan hari (tidak check-in), status jadi 'cancelled'
+  -- expected_day = hari sejak start (dibatasi total hari)
+  UPDATE public.user_challenges uc
+     SET status = 'cancelled'
+   WHERE uc.user_id = v_user
+     AND uc.status = 'active'
+     AND (p_category IS NULL OR uc.category::text = p_category::text)
+     AND (current_date - uc.start_date + 1) > uc.current_day;
+
+  RETURN QUERY
+    SELECT uc.* FROM public.user_challenges uc
+     WHERE uc.user_id = v_user AND uc.status = 'active'
+       AND (p_category IS NULL OR uc.category::text = p_category::text)
+     ORDER BY uc.created_at DESC;
+END;
 $$;
 
 CREATE OR REPLACE FUNCTION public.rpc_log_daily_progress(
@@ -300,12 +331,13 @@ BEGIN
 
   IF NOT FOUND THEN RAISE EXCEPTION 'Challenge tidak ditemukan/aktif untuk user'; END IF;
 
+  -- total hari adalah selisih date (dalam integer) + 1
   UPDATE public.user_challenges
   SET
-    current_day = LEAST(current_day + 1, EXTRACT(DAY FROM (end_date - start_date + 1))::int),
+    current_day = LEAST(current_day + 1, ((end_date - start_date + 1))::int),
     success_days = success_days + CASE WHEN p_success THEN 1 ELSE 0 END,
-    completed_at = CASE WHEN (current_day + 1) >= EXTRACT(DAY FROM (end_date - start_date + 1))::int THEN now() ELSE completed_at END,
-    status = CASE WHEN (current_day + 1) >= EXTRACT(DAY FROM (end_date - start_date + 1))::int THEN 'completed' ELSE status END
+    completed_at = CASE WHEN (current_day + 1) >= ((end_date - start_date + 1))::int THEN now() ELSE completed_at END,
+    status = CASE WHEN (current_day + 1) >= ((end_date - start_date + 1))::int THEN 'completed' ELSE status END
   WHERE id = p_user_challenge_id
   RETURNING * INTO v_uc;
 

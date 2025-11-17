@@ -213,5 +213,20 @@ class AuthProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  /// Apply stats update after actions like check-in
+  void applyStatsUpdate({
+    int? currentStreak,
+    int? longestStreak,
+    int? totalPoints,
+  }) {
+    if (_currentUser == null) return;
+    _currentUser = _currentUser!.copyWith(
+      currentStreak: currentStreak,
+      longestStreak: longestStreak,
+      totalPoints: totalPoints,
+    );
+    notifyListeners();
+  }
 }
 

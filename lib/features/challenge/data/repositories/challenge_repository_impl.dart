@@ -3,6 +3,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/challenge.dart';
 import '../../domain/entities/user_challenge.dart';
+import '../../domain/entities/check_in_result.dart';
 import '../../domain/repositories/challenge_repository.dart';
 import '../datasources/challenge_remote_datasource.dart';
 
@@ -48,6 +49,7 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   @override
   Future<Either<Failure, List<UserChallenge>>> getActiveChallenges({String? category}) async {
     try {
+<<<<<<< HEAD
       /// Memanggil remote datasource untuk mendapatkan active challenges
       final result = await remoteDatasource.getActiveChallenges(category: category);
 
@@ -55,6 +57,11 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
       return Right(result);
     } on ServerException catch (e) {
       /// Jika terjadi ServerException, convert ke ServerFailure
+=======
+      final res = await remote.getActiveChallenges(category: category);
+      return Right(res);
+    } on AppException catch (e) {
+>>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
       return Left(ServerFailure(e.message));
     } catch (e) {
       /// Jika terjadi error lain, convert ke ServerFailure
@@ -85,8 +92,34 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
     } on AuthException catch (e) {
       /// Jika terjadi AuthException, convert ke AuthFailure
       return Left(AuthFailure(e.message));
+<<<<<<< HEAD
     } on ServerException catch (e) {
       /// Jika terjadi ServerException, convert ke ServerFailure
+=======
+    } on AppException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, CheckInResult>> checkIn({
+    required String userChallengeId,
+    required bool isSuccess,
+    DateTime? checkInDate,
+  }) async {
+    try {
+      final res = await remote.checkIn(
+        userChallengeId: userChallengeId,
+        isSuccess: isSuccess,
+        checkInDate: checkInDate,
+      );
+      return Right(res);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on AppException catch (e) {
+>>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
       return Left(ServerFailure(e.message));
     } catch (e) {
       /// Jika terjadi error lain, convert ke ServerFailure

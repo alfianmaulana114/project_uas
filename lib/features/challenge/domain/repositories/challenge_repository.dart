@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/challenge.dart';
 import '../entities/user_challenge.dart';
+import '../entities/check_in_result.dart';
 
 /// Abstract repository untuk challenge
 /// Mengikuti Dependency Inversion Principle (SOLID)
@@ -31,6 +32,14 @@ abstract class ChallengeRepository {
     DateTime? startDate,
     String? bookName,
     String? eventName,
+  });
+
+  /// Mark daily check-in for a user challenge
+  /// Returns CheckInResult containing updated challenge and user stats
+  Future<Either<Failure, CheckInResult>> checkIn({
+    required String userChallengeId,
+    required bool isSuccess,
+    DateTime? checkInDate,
   });
 }
 

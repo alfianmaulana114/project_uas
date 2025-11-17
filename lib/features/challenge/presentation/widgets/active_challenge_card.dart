@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import '../../domain/entities/user_challenge.dart';
+=======
+import 'package:provider/provider.dart';
+import '../../../challenge/domain/entities/user_challenge.dart';
+import '../../presentation/providers/challenge_provider.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
+>>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
 import 'progress_bar.dart';
+import '../../../reward/presentation/providers/reward_provider.dart';
+import '../../../reward/presentation/widgets/achievement_unlock_dialog.dart';
 
 /// Active Challenge Card Widget
 /// Widget untuk menampilkan card challenge yang sedang aktif
@@ -12,8 +21,13 @@ class ActiveChallengeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     /// Hitung total hari challenge
     /// Jika endDate null, gunakan currentDay sebagai estimasi
+=======
+    final isLoading = context.watch<ChallengeProvider>().isLoading;
+    final hasCheckedToday = context.watch<ChallengeProvider>().hasCheckedInToday(userChallenge.id);
+>>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
     final totalDays = userChallenge.endDate == null
         ? userChallenge.currentDay
         : (userChallenge.endDate!.difference(userChallenge.startDate).inDays + 1).clamp(1, 3650);
@@ -52,6 +66,66 @@ class ActiveChallengeCard extends StatelessWidget {
                 Chip(label: Text('Sukses ${userChallenge.successDays}')),
                 if (userChallenge.bookName != null) Chip(label: Text('Buku: ${userChallenge.bookName}')),
                 if (userChallenge.eventName != null) Chip(label: Text('Event: ${userChallenge.eventName}')),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.thumb_up_outlined),
+                    label: const Text('Mark Success'),
+                    onPressed: (isLoading || hasCheckedToday)
+                        ? null
+                        : () async {
+                            final p = context.read<ChallengeProvider>();
+                            final res = await p.checkIn(
+                                userChallengeId: userChallenge.id, isSuccess: true);
+                            if (res == null) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(p.error ?? 'Gagal check-in')),
+                                );
+                              }
+                              return;
+                            }
+                            // Update user stats in AuthProvider
+                            context.read<AuthProvider>().applyStatsUpdate(
+                                  currentStreak: res.currentStreak,
+                                  longestStreak: res.longestStreak,
+                                  totalPoints: res.totalPoints,
+                                );
+                            // Check and award achievements after a check-in or completion
+                            final rewards = await context
+                                .read<RewardProvider>()
+                                .checkAfterEvent(
+                                    trigger: res.challengeCompleted ? 'challenge_completed' : 'checkin');
+                            if (context.mounted && rewards.isNotEmpty) {
+                              await showDialog(
+                                context: context,
+                                builder: (_) => AchievementUnlockDialog(achievements: rewards),
+                              );
+                            }
+                            if (context.mounted) {
+                              if (res.alreadyCheckedInToday) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Sudah check-in hari ini')),
+                                );
+                              } else if (res.challengeCompleted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          'Challenge selesai! +${res.pointsAwarded} poin')),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Berhasil untuk hari ini. Lanjutkan lagi besok.')),
+                                );
+                              }
+                            }
+                          },
+                  ),
+                ),
               ],
             ),
           ],

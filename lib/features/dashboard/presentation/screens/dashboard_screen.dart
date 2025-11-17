@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../challenge/presentation/providers/challenge_provider.dart';
+import '../../../analytics/presentation/screens/analytics_screen.dart';
 import '../../../challenge/presentation/screens/challenge_list_screen.dart';
+<<<<<<< HEAD
 import '../../../challenge/presentation/widgets/active_challenge_card.dart';
+=======
+import '../../../challenge/presentation/providers/challenge_provider.dart';
+import '../widgets/motivational_empty_state.dart';
+import '../widgets/progress_summary_widget.dart';
+>>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
 
 /// Dashboard Screen
 /// Screen utama aplikasi dengan navigation bar
@@ -19,11 +25,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// Index tab yang sedang aktif
   int _index = 0;
 
+  void _switchToChallengeTab() {
+    setState(() {
+      _index = 1; // Switch to Challenge tab
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      const _HomeTab(),
+      _HomeTab(onNavigateToChallenges: _switchToChallengeTab),
       const ChallengeListScreen(),
+      const AnalyticsScreen(),
     ];
 
     return Scaffold(
@@ -32,6 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
+<<<<<<< HEAD
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
@@ -42,18 +56,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
             selectedIcon: Icon(Icons.flag),
             label: 'Challenge',
           ),
+=======
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.flag_outlined), selectedIcon: Icon(Icons.flag), label: 'Challenge'),
+          NavigationDestination(icon: Icon(Icons.insights_outlined), selectedIcon: Icon(Icons.insights), label: 'Analytics'),
+>>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
         ],
       ),
     );
   }
 }
 
+<<<<<<< HEAD
 /// Home Tab
 /// Menampilkan dashboard home dengan active challenges
 class _HomeTab extends StatefulWidget {
   /// Constructor untuk _HomeTab
   const _HomeTab();
 
+=======
+class _HomeTab extends StatefulWidget {
+  final VoidCallback onNavigateToChallenges;
+  
+  const _HomeTab({required this.onNavigateToChallenges});
+  
+>>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
   @override
   State<_HomeTab> createState() => _HomeTabState();
 }
@@ -62,7 +89,11 @@ class _HomeTabState extends State<_HomeTab> {
   @override
   void initState() {
     super.initState();
+<<<<<<< HEAD
     /// Load challenges saat screen pertama kali dibuka
+=======
+    // Load challenge data saat home dibuka
+>>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ChallengeProvider>().load();
     });
@@ -71,6 +102,7 @@ class _HomeTabState extends State<_HomeTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
       appBar: AppBar(
         title: const Text('Dashboard'),
       ),
@@ -179,6 +211,22 @@ class _HomeTabState extends State<_HomeTab> {
               ],
             );
           },
+=======
+      appBar: AppBar(title: const Text('Dashboard')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            // Widget motivasional (muncul jika poin/streak = 0)
+            MotivationalEmptyState(onNavigateToChallenges: widget.onNavigateToChallenges),
+            
+            const SizedBox(height: 16),
+            // Ringkasan Progress yang Lebih Visual
+            ProgressSummaryWidget(onNavigateToChallenges: widget.onNavigateToChallenges),
+          ],
+>>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
         ),
       ),
     );
