@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/achievement.dart';
 import '../entities/user_achievement.dart';
+import '../entities/leaderboard_entry.dart';
 
 abstract class RewardRepository {
   Future<Either<Failure, List<Achievement>>> getAllAchievements();
@@ -12,4 +13,10 @@ abstract class RewardRepository {
   Future<Either<Failure, int>> getSuccessfulCheckinCount({required String userId});
   Future<Either<Failure, int>> getCompletedChallengesCount({required String userId});
   Future<Either<Failure, int>> getCurrentStreak({required String userId});
+  
+  // Leaderboard
+  Future<Either<Failure, List<LeaderboardEntry>>> getLeaderboard({
+    String sortBy = 'points',
+    int limit = 100,
+  });
 }

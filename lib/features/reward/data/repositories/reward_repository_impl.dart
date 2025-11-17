@@ -3,6 +3,7 @@ import '../../../../core/errors/failures.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../domain/entities/achievement.dart';
 import '../../domain/entities/user_achievement.dart';
+import '../../domain/entities/leaderboard_entry.dart';
 import '../../domain/repositories/reward_repository.dart';
 import '../datasources/reward_remote_datasource.dart';
 
@@ -71,6 +72,20 @@ class RewardRepositoryImpl implements RewardRepository {
       final n = await remote.getCurrentStreak(userId);
       return Right(n);
     } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<LeaderboardEntry>>> getLeaderboard({
+    String sortBy = 'points',
+    int limit = 100,
+  }) async {
+    try {
+      final data = await remote.getLeaderboard(sortBy: sortBy, limit: limit);
+      return Right(data.map((e) => e.toEntity()).toList());
+    } catch (e) {
+      if (e is AuthException) return Left(AuthFailure(e.message));
       return Left(ServerFailure(e.toString()));
     }
   }

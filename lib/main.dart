@@ -60,6 +60,7 @@ class MyApp extends StatelessWidget {
             getAllAchievementsUsecase: di.sl(),
             getUserAchievementsUsecase: di.sl(),
             checkAchievementsUsecase: di.sl(),
+            getLeaderboardUsecase: di.sl(),
             authProvider: context.read<AuthProvider>(),
           ),
         ),

@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-import '../../domain/entities/user_challenge.dart';
-=======
 import 'package:provider/provider.dart';
 import '../../../challenge/domain/entities/user_challenge.dart';
 import '../../presentation/providers/challenge_provider.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
->>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
 import 'progress_bar.dart';
 import '../../../reward/presentation/providers/reward_provider.dart';
 import '../../../reward/presentation/widgets/achievement_unlock_dialog.dart';
@@ -21,13 +17,8 @@ class ActiveChallengeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
-    /// Hitung total hari challenge
-    /// Jika endDate null, gunakan currentDay sebagai estimasi
-=======
     final isLoading = context.watch<ChallengeProvider>().isLoading;
     final hasCheckedToday = context.watch<ChallengeProvider>().hasCheckedInToday(userChallenge.id);
->>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
     final totalDays = userChallenge.endDate == null
         ? userChallenge.currentDay
         : (userChallenge.endDate!.difference(userChallenge.startDate).inDays + 1).clamp(1, 3650);

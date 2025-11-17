@@ -21,6 +21,7 @@ import 'features/reward/domain/repositories/reward_repository.dart';
 import 'features/reward/domain/usecases/get_all_achievements_usecase.dart';
 import 'features/reward/domain/usecases/get_user_achievements_usecase.dart';
 import 'features/reward/domain/usecases/check_achievements_usecase.dart';
+import 'features/reward/domain/usecases/get_leaderboard_usecase.dart';
 import 'features/reward/presentation/providers/reward_provider.dart';
 import 'features/analytics/data/datasources/analytics_remote_datasource.dart';
 import 'features/analytics/data/repositories/analytics_repository_impl.dart';
@@ -139,6 +140,9 @@ Future<void> init() async {
   sl.registerLazySingleton(
     () => CheckAchievementsUsecase(sl<RewardRepository>()),
   );
+  sl.registerLazySingleton(
+    () => GetLeaderboardUsecase(sl<RewardRepository>()),
+  );
 
   /// Analytics Use Cases
   sl.registerLazySingleton(
@@ -177,6 +181,7 @@ Future<void> init() async {
       getAllAchievementsUsecase: sl<GetAllAchievementsUsecase>(),
       getUserAchievementsUsecase: sl<GetUserAchievementsUsecase>(),
       checkAchievementsUsecase: sl<CheckAchievementsUsecase>(),
+      getLeaderboardUsecase: sl<GetLeaderboardUsecase>(),
       authProvider: sl<AuthProvider>(),
     ),
   );

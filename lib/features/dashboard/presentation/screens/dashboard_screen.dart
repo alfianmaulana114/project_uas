@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../analytics/presentation/screens/analytics_screen.dart';
 import '../../../challenge/presentation/screens/challenge_list_screen.dart';
-<<<<<<< HEAD
-import '../../../challenge/presentation/widgets/active_challenge_card.dart';
-=======
 import '../../../challenge/presentation/providers/challenge_provider.dart';
+import '../../../reward/presentation/screens/leaderboard_screen.dart';
 import '../widgets/motivational_empty_state.dart';
 import '../widgets/progress_summary_widget.dart';
->>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
+import '../../../authentication/presentation/providers/auth_provider.dart';
+import '../../../analytics/presentation/providers/analytics_provider.dart';
+import '../../../analytics/presentation/widgets/stats_card.dart';
+import '../../../analytics/presentation/widgets/checkin_bar_chart.dart';
 
 /// Dashboard Screen
 /// Screen utama aplikasi dengan navigation bar
 /// Mengikuti konsep Single Responsibility Principle
 class DashboardScreen extends StatefulWidget {
-  /// Constructor untuk DashboardScreen
+  /// Constructor untuk DashboardScreen 
   const DashboardScreen({super.key});
 
   @override
@@ -37,6 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _HomeTab(onNavigateToChallenges: _switchToChallengeTab),
       const ChallengeListScreen(),
       const AnalyticsScreen(),
+      const LeaderboardScreen(),
     ];
 
     return Scaffold(
@@ -45,173 +47,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
-<<<<<<< HEAD
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.flag_outlined),
-            selectedIcon: Icon(Icons.flag),
-            label: 'Challenge',
-          ),
-=======
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.flag_outlined), selectedIcon: Icon(Icons.flag), label: 'Challenge'),
           NavigationDestination(icon: Icon(Icons.insights_outlined), selectedIcon: Icon(Icons.insights), label: 'Analytics'),
->>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
+          NavigationDestination(icon: Icon(Icons.leaderboard_outlined), selectedIcon: Icon(Icons.leaderboard), label: 'Ranking'),
         ],
       ),
     );
   }
 }
 
-<<<<<<< HEAD
 /// Home Tab
 /// Menampilkan dashboard home dengan active challenges
-class _HomeTab extends StatefulWidget {
-  /// Constructor untuk _HomeTab
-  const _HomeTab();
-
-=======
 class _HomeTab extends StatefulWidget {
   final VoidCallback onNavigateToChallenges;
   
   const _HomeTab({required this.onNavigateToChallenges});
-  
->>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
   @override
   State<_HomeTab> createState() => _HomeTabState();
 }
 
 class _HomeTabState extends State<_HomeTab> {
+  late final String _quote;
+  static const List<String> _quotes = [
+    'Kurangi scroll, tambahkan langkah menuju tujuanmu.',
+    'Kamu Hebat! Kendalikan waktumu, bukan layar.',
+    'Satu hari tanpa scroll berlebihan adalah satu langkah maju.',
+    'Fokus pada hal yang membuatmu berkembang, bukan yang mengalihkan.',
+    'Detox sosmed dimulai dari keputusan kecil hari ini.',
+  ];
+
   @override
   void initState() {
     super.initState();
-<<<<<<< HEAD
-    /// Load challenges saat screen pertama kali dibuka
-=======
-    // Load challenge data saat home dibuka
->>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
+    _quote = _quotes[DateTime.now().day % _quotes.length];
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ChallengeProvider>().load();
+      final auth = context.read<AuthProvider>();
+      final uid = auth.currentUser?.id ?? '';
+      if (uid.isNotEmpty) {
+        context.read<AnalyticsProvider>().load(uid);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => context.read<ChallengeProvider>().refresh(),
-        child: Consumer<ChallengeProvider>(
-          builder: (context, provider, _) {
-            /// Jika sedang loading
-            if (provider.isLoading && provider.activeChallenges.isEmpty) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                /// Welcome message
-                const Text(
-                  'Selamat datang!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Challenge aktif: ${provider.activeChallenges.length}',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                const SizedBox(height: 24),
-
-                /// Active Challenges Section
-                if (provider.activeChallenges.isNotEmpty) ...[
-                  const Text(
-                    'Challenge Aktif',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ...provider.activeChallenges.map(
-                    (userChallenge) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: ActiveChallengeCard(userChallenge: userChallenge),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ] else ...[
-                  /// Empty state
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.flag_outlined,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Belum ada challenge aktif',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Mulai challenge baru untuk mengembangkan diri!',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-
-                /// Error message
-                if (provider.error != null) ...[
-                  const SizedBox(height: 16),
-                  Card(
-                    color: Theme.of(context).colorScheme.errorContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: Theme.of(context).colorScheme.onErrorContainer,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              provider.error!,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onErrorContainer,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            );
-          },
-=======
       appBar: AppBar(title: const Text('Dashboard')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -219,14 +101,71 @@ class _HomeTabState extends State<_HomeTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            // Widget motivasional (muncul jika poin/streak = 0)
+            Card(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Motivasi & Pesan Positif',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.lightbulb, color: Colors.amber),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _quote,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             MotivationalEmptyState(onNavigateToChallenges: widget.onNavigateToChallenges),
-            
             const SizedBox(height: 16),
-            // Ringkasan Progress yang Lebih Visual
             ProgressSummaryWidget(onNavigateToChallenges: widget.onNavigateToChallenges),
+            const SizedBox(height: 16),
+            Text(
+              'Visualisasi Data & Statistik',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Consumer<AnalyticsProvider>(
+              builder: (context, analytics, _) {
+                final stats = analytics.stats;
+                final weekly = analytics.weekly;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (stats != null) ...[
+                      StatsCard(title: 'Total Poin', value: '${stats.totalPoints}', icon: Icons.star),
+                      StatsCard(title: 'Challenge Selesai', value: '${stats.completedChallenges}', icon: Icons.flag),
+                      StatsCard(title: 'Streak Terpanjang', value: '${stats.longestStreak}', icon: Icons.timeline),
+                      const SizedBox(height: 12),
+                    ],
+                    Text('Check-in 7 Hari Terakhir', style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 8),
+                    if (weekly.isNotEmpty)
+                      CheckinBarChart(data: weekly)
+                    else
+                      const SizedBox(
+                        height: 160,
+                        child: Center(child: Text('Belum ada data minggu ini')),
+                      ),
+                  ],
+                );
+              },
+            ),
           ],
->>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
         ),
       ),
     );

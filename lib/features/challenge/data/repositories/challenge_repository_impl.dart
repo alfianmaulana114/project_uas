@@ -49,7 +49,6 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
   @override
   Future<Either<Failure, List<UserChallenge>>> getActiveChallenges({String? category}) async {
     try {
-<<<<<<< HEAD
       /// Memanggil remote datasource untuk mendapatkan active challenges
       final result = await remoteDatasource.getActiveChallenges(category: category);
 
@@ -57,11 +56,6 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
       return Right(result);
     } on ServerException catch (e) {
       /// Jika terjadi ServerException, convert ke ServerFailure
-=======
-      final res = await remote.getActiveChallenges(category: category);
-      return Right(res);
-    } on AppException catch (e) {
->>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
       return Left(ServerFailure(e.message));
     } catch (e) {
       /// Jika terjadi error lain, convert ke ServerFailure
@@ -92,14 +86,12 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
     } on AuthException catch (e) {
       /// Jika terjadi AuthException, convert ke AuthFailure
       return Left(AuthFailure(e.message));
-<<<<<<< HEAD
     } on ServerException catch (e) {
       /// Jika terjadi ServerException, convert ke ServerFailure
-=======
-    } on AppException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      /// Jika terjadi error lain, convert ke ServerFailure
+      return Left(ServerFailure('Gagal memulai challenge: ${e.toString()}'));
     }
   }
 
@@ -110,20 +102,24 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
     DateTime? checkInDate,
   }) async {
     try {
-      final res = await remote.checkIn(
+      /// Memanggil remote datasource untuk check-in
+      final result = await remoteDatasource.checkIn(
         userChallengeId: userChallengeId,
         isSuccess: isSuccess,
         checkInDate: checkInDate,
       );
-      return Right(res);
+
+      /// Jika berhasil, return Right dengan CheckInResult
+      return Right(result);
     } on AuthException catch (e) {
+      /// Jika terjadi AuthException, convert ke AuthFailure
       return Left(AuthFailure(e.message));
-    } on AppException catch (e) {
->>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
+    } on ServerException catch (e) {
+      /// Jika terjadi ServerException, convert ke ServerFailure
       return Left(ServerFailure(e.message));
     } catch (e) {
       /// Jika terjadi error lain, convert ke ServerFailure
-      return Left(ServerFailure('Gagal memulai challenge: ${e.toString()}'));
+      return Left(ServerFailure('Gagal check-in: ${e.toString()}'));
     }
   }
 }

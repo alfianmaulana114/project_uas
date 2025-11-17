@@ -36,25 +36,20 @@ class _DummyRepo implements ChallengeRepository {
 class _StubGetAll extends GetAllChallengesUsecase {
   _StubGetAll() : super(_DummyRepo());
   @override
-  Future<Either<Failure, List<Challenge>>> call({String? category}) async => Right([]);
+  Future<Either<Failure, List<Challenge>>> call(GetAllChallengesParams params) async => Right([]);
 }
 
 class _StubGetActive extends GetActiveChallengeUsecase {
   _StubGetActive() : super(_DummyRepo());
   @override
-  Future<Either<Failure, List<UserChallenge>>> call({String? category}) async => Right([]);
+  Future<Either<Failure, List<UserChallenge>>> call(GetActiveChallengeParams params) async => Right([]);
 }
 
 class _StubStart extends StartChallengeUsecase {
   final UserChallenge userChallenge;
   _StubStart(this.userChallenge) : super(_DummyRepo());
   @override
-  Future<Either<Failure, UserChallenge>> call({
-    required String challengeId,
-    DateTime? startDate,
-    String? bookName,
-    String? eventName,
-  }) async => Right(userChallenge);
+  Future<Either<Failure, UserChallenge>> call(StartChallengeParams params) async => Right(userChallenge);
 }
 
 class _StubCheckIn extends CheckInUsecase {

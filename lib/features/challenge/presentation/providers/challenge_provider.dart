@@ -38,16 +38,6 @@ class ChallengeProvider extends ChangeNotifier {
   /// List challenges yang tersedia
   /// Hanya disimpan di memory, tidak persist ke local storage
   final List<Challenge> _challenges = [];
-<<<<<<< HEAD
-=======
-  final List<UserChallenge> _active = [];
-  String? _error;
-  bool _loading = false;
-  String? _selectedCategory; // null = all
-  // Track last check-in date per active challenge to disable button until tomorrow
-  final Map<String, DateTime> _lastCheckInDate = {};
-  DateTime _lastMidnight = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
->>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
 
   /// List active challenges user
   /// Hanya disimpan di memory, tidak persist ke local storage
@@ -61,6 +51,10 @@ class ChallengeProvider extends ChangeNotifier {
 
   /// Kategori yang dipilih untuk filter (null = semua kategori)
   String? _selectedCategory;
+
+  // Track last check-in date per active challenge to disable button until tomorrow
+  final Map<String, DateTime> _lastCheckInDate = {};
+  DateTime _lastMidnight = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
   /// Getter untuk challenges
   List<Challenge> get challenges => List.unmodifiable(_challenges);
@@ -77,12 +71,6 @@ class ChallengeProvider extends ChangeNotifier {
   /// Getter untuk selected category
   String? get selectedCategory => _selectedCategory;
 
-<<<<<<< HEAD
-  /// Method untuk load challenges dan active challenges
-  /// [category] adalah kategori untuk filter (opsional, null berarti semua kategori)
-  Future<void> load({String? category}) async {
-    /// Set loading state menjadi true
-=======
   bool hasCheckedInToday(String userChallengeId) {
     final d = _lastCheckInDate[userChallengeId];
     if (d == null) return false;
@@ -98,9 +86,11 @@ class ChallengeProvider extends ChangeNotifier {
     }
   }
 
+  /// Method untuk load challenges dan active challenges
+  /// [category] adalah kategori untuk filter (opsional, null berarti semua kategori)
   Future<void> load({String? category}) async {
     _rolloverIfNewDay();
->>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
+    /// Set loading state menjadi true
     _loading = true;
     _error = null;
     _selectedCategory = category;
@@ -191,7 +181,6 @@ class ChallengeProvider extends ChangeNotifier {
     return ok;
   }
 
-<<<<<<< HEAD
   /// Method untuk clear error
   /// Digunakan untuk menghapus error message dari UI
   void clearError() {
@@ -203,7 +192,8 @@ class ChallengeProvider extends ChangeNotifier {
   /// Memanggil load dengan category yang sudah dipilih
   Future<void> refresh() async {
     await load(category: _selectedCategory);
-=======
+  }
+
   /// Daily check-in: mark success/failed and update state
   Future<CheckInResult?> checkIn({
     required String userChallengeId,
@@ -271,7 +261,6 @@ class ChallengeProvider extends ChangeNotifier {
     _loading = false;
     notifyListeners();
     return result;
->>>>>>> 3b97d0edc0d8b342bc3290bde799bd32e26541a6
   }
 }
 
