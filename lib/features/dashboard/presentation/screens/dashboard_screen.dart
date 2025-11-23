@@ -6,6 +6,7 @@ import '../../../challenge/presentation/providers/challenge_provider.dart';
 import '../../../reward/presentation/screens/leaderboard_screen.dart';
 import '../widgets/motivational_empty_state.dart';
 import '../widgets/progress_summary_widget.dart';
+import '../widgets/streak_celebration_widget.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../analytics/presentation/providers/analytics_provider.dart';
 import '../../../analytics/presentation/widgets/stats_card.dart';
@@ -69,6 +70,9 @@ class _HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<_HomeTab> {
   late final String _quote;
+  int? _previousStreak;
+  bool _showStreakCelebration = false;
+  
   static const List<String> _quotes = [
     'Kurangi scroll, tambahkan langkah menuju tujuanmu.',
     'Kamu Hebat! Kendalikan waktumu, bukan layar.',
@@ -88,21 +92,56 @@ class _HomeTabState extends State<_HomeTab> {
       if (uid.isNotEmpty) {
         context.read<AnalyticsProvider>().load(uid);
       }
+      // Initialize previous streak
+      _previousStreak = auth.currentUser?.currentStreak;
     });
+  }
+
+  void _checkStreakIncrease(int currentStreak) {
+    // Only trigger animation if:
+    // 1. Previous streak is not null (already initialized)
+    // 2. Current streak is greater than previous
+    // 3. Not already showing celebration
+    if (_previousStreak != null && 
+        currentStreak > _previousStreak! && 
+        !_showStreakCelebration) {
+      // Streak bertambah!
+      setState(() {
+        _showStreakCelebration = true;
+      });
+    }
+    // Update previous streak
+    _previousStreak = currentStreak;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    // Monitor streak changes
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        final currentStreak = authProvider.currentUser?.currentStreak ?? 0;
+        
+        // Check for streak increase after build
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _checkStreakIncrease(currentStreak);
+          }
+        });
+        
+        return Scaffold(
+          appBar: AppBar(title: const Text('Dashboard')),
+          body: Stack(
+            children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
             const SizedBox(height: 8),
+            // Level 3: Sekunder (motivasi) - paling terang
             Card(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              elevation: 0,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -165,9 +204,29 @@ class _HomeTabState extends State<_HomeTab> {
                 );
               },
             ),
-          ],
-        ),
-      ),
+              ],
+            ),
+          ),
+          // Streak celebration animation overlay
+          if (_showStreakCelebration)
+            Positioned(
+              top: 80,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: StreakCelebrationWidget(
+                  onAnimationComplete: () {
+                    setState(() {
+                      _showStreakCelebration = false;
+                    });
+                  },
+                ),
+              ),
+            ),
+        ],
+          ),
+        );
+      },
     );
   }
 }

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../../challenge/domain/entities/user_challenge.dart';
 import '../../presentation/providers/challenge_provider.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
-import 'progress_bar.dart';
 import '../../../reward/presentation/providers/reward_provider.dart';
 import '../../../reward/presentation/widgets/achievement_unlock_dialog.dart';
 
@@ -45,20 +44,59 @@ class ActiveChallengeCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            ProgressBar(
-              value: percent,
-              showLabel: true,
+            // Progress Bar - Soft Blue
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: percent,
+                minHeight: 12,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Colors.blue.shade200, // Soft blue
+                ),
+              ),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
+            const SizedBox(height: 12),
+            // Label progress dengan icon - Font lebih besar
+            Row(
               children: [
-                Chip(label: Text('Hari ${userChallenge.currentDay}/$totalDays')),
-                Chip(label: Text('Sukses ${userChallenge.successDays}')),
-                if (userChallenge.bookName != null) Chip(label: Text('Buku: ${userChallenge.bookName}')),
-                if (userChallenge.eventName != null) Chip(label: Text('Event: ${userChallenge.eventName}')),
+                const Text(
+                  '📅',
+                  style: TextStyle(fontSize: 18),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Hari ${userChallenge.currentDay}/$totalDays',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                ),
+                const SizedBox(width: 16),
+                const Text(
+                  '✔',
+                  style: TextStyle(fontSize: 18),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '${userChallenge.successDays} sukses',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                ),
               ],
             ),
+            if (userChallenge.bookName != null || userChallenge.eventName != null) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  if (userChallenge.bookName != null) Chip(label: Text('Buku: ${userChallenge.bookName}')),
+                  if (userChallenge.eventName != null) Chip(label: Text('Event: ${userChallenge.eventName}')),
+                ],
+              ),
+            ],
             const SizedBox(height: 12),
             Row(
               children: [
@@ -66,6 +104,13 @@ class ActiveChallengeCard extends StatelessWidget {
                   child: FilledButton.icon(
                     icon: const Icon(Icons.thumb_up_outlined),
                     label: const Text('Mark Success'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.blue.shade700, // Strong blue
+                      foregroundColor: Colors.white,
+                      elevation: 2,
+                      disabledBackgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                     onPressed: (isLoading || hasCheckedToday)
                         ? null
                         : () async {

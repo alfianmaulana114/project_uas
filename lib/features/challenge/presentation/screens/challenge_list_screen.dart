@@ -88,7 +88,7 @@ class _ChallengeListScreenState extends State<ChallengeListScreen> {
                 child: Center(child: Text('Tidak ada challenge')),
               )
             else
-              ...provider.challenges.map((ch) => ChallengeCard(challenge: ch)).toList(),
+              ...provider.challenges.map((ch) => ChallengeCard(challenge: ch)),
             if (provider.error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),

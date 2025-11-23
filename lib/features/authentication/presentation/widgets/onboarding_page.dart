@@ -39,7 +39,7 @@ class OnboardingPage extends StatelessWidget {
               return Container(
                 height: 300,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(

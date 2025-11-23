@@ -42,7 +42,7 @@ class ProgressComparisonChart extends StatelessWidget {
                 Container(
                   height: 18,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceVariant,
+                    color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),

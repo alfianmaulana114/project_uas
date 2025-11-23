@@ -14,8 +14,8 @@ class AnalyticsRemoteDataSourceImpl implements AnalyticsRemoteDataSource {
   @override
   Future<UserStatsModel> getUserStats(String userId) async {
     final res = await client.from('user_stats').select().eq('user_id', userId).limit(1);
-    if (res is List && res.isNotEmpty) {
-      return UserStatsModel.fromMap(res.first as Map<String, dynamic>);
+    if (res.isNotEmpty) {
+      return UserStatsModel.fromMap(res.first);
     }
     return const UserStatsModel(
       userId: '',
@@ -47,25 +47,23 @@ class AnalyticsRemoteDataSourceImpl implements AnalyticsRemoteDataSource {
       byDay[_fmtDate(d)] = {'success': 0, 'failed': 0};
     }
 
-    if (checkins is List) {
-      for (final raw in checkins) {
-        final m = raw as Map<String, dynamic>;
-        final createdAtStr = m['created_at']?.toString();
-        if (createdAtStr == null) continue;
-        final createdAt = DateTime.tryParse(createdAtStr)?.toLocal();
-        if (createdAt == null) continue;
-        final key = _fmtDate(createdAt);
-        if (!byDay.containsKey(key)) continue;
-        final isSuccess = (m['is_success'] == true) || (m['status']?.toString() == 'success');
-        final bucket = byDay[key]!;
-        if (isSuccess) {
-          bucket['success'] = (bucket['success'] ?? 0) + 1;
-        } else {
-          bucket['failed'] = (bucket['failed'] ?? 0) + 1;
-        }
+    for (final raw in checkins) {
+      final m = raw as Map<String, dynamic>;
+      final createdAtStr = m['created_at']?.toString();
+      if (createdAtStr == null) continue;
+      final createdAt = DateTime.tryParse(createdAtStr)?.toLocal();
+      if (createdAt == null) continue;
+      final key = _fmtDate(createdAt);
+      if (!byDay.containsKey(key)) continue;
+      final isSuccess = (m['is_success'] == true) || (m['status']?.toString() == 'success');
+      final bucket = byDay[key]!;
+      if (isSuccess) {
+        bucket['success'] = (bucket['success'] ?? 0) + 1;
+      } else {
+        bucket['failed'] = (bucket['failed'] ?? 0) + 1;
       }
     }
-
+  
     return byDay.entries.map((e) {
       final dateParts = e.key.split('-');
       final d = DateTime(

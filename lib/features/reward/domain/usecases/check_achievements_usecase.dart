@@ -1,7 +1,6 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/achievement.dart';
-import '../entities/user_achievement.dart';
 import '../repositories/reward_repository.dart';
 
 class CheckAchievementsUsecase {

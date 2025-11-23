@@ -25,14 +25,15 @@ class MotivationalEmptyState extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
+        // Level 3: Sekunder (motivasi) - paling terang
         return Container(
-          margin: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
             ),
           ),
           child: Column(

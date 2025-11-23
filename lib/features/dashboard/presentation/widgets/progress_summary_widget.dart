@@ -46,9 +46,10 @@ class ProgressSummaryWidget extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔥 Streak Saat Ini
+            // 🔥 Streak Saat Ini - Level 2: Informasi (medium gray)
             Card(
-              color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              elevation: 0,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -93,9 +94,10 @@ class ProgressSummaryWidget extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // ⭐ Total Poin
+            // ⭐ Total Poin - Level 2: Informasi (medium gray)
             Card(
-              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              elevation: 0,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -132,9 +134,17 @@ class ProgressSummaryWidget extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // 🎯 Challenge Aktif
+            // 🎯 Challenge Aktif - Level 1: Card Utama (strong/light purple)
             Card(
-              color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.3),
+              color: Theme.of(context).colorScheme.primaryContainer,
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -199,7 +209,49 @@ class ProgressSummaryWidget extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Progress Bar
+                              // Nama/Kategori Challenge
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.flag_rounded,
+                                    size: 20,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      userChallenge.category.replaceAll('_', ' ').toUpperCase(),
+                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (userChallenge.bookName != null || userChallenge.eventName != null) ...[
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  children: [
+                                    if (userChallenge.bookName != null)
+                                      Chip(
+                                        label: Text('Buku: ${userChallenge.bookName}'),
+                                        labelStyle: Theme.of(context).textTheme.bodySmall,
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      ),
+                                    if (userChallenge.eventName != null)
+                                      Chip(
+                                        label: Text('Event: ${userChallenge.eventName}'),
+                                        labelStyle: Theme.of(context).textTheme.bodySmall,
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              // Progress Bar - Soft Blue
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: LinearProgressIndicator(
@@ -207,30 +259,113 @@ class ProgressSummaryWidget extends StatelessWidget {
                                   minHeight: 12,
                                   backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Theme.of(context).colorScheme.primary,
+                                    Colors.blue.shade200, // Soft blue
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 12),
                               
-                              // Hari ke-X dari total
-                              Text(
-                                'Hari $currentDay dari $totalDays',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                              // Label progress dengan icon - Font lebih besar
+                              Wrap(
+                                spacing: 16,
+                                runSpacing: 8,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text(
+                                        '📅',
+                                        style: TextStyle(fontSize: 18),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Hari $currentDay/$totalDays',
+                                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text(
+                                        '✔',
+                                        style: TextStyle(fontSize: 18),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '${userChallenge.successDays} sukses',
+                                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 12),
                               
-                              // Tombol Mark Success
-                              SizedBox(
-                                width: double.infinity,
-                                child: FilledButton.icon(
-                                  icon: const Icon(Icons.check_circle_outline),
-                                  label: const Text('Mark Success'),
-                                  onPressed: (isLoading || hasCheckedToday)
-                                      ? null
-                                      : () async {
+                              // Tombol Mark Success dengan state indicator
+                              Builder(
+                                builder: (context) {
+                                  // State: sudah check-in hari ini (hijau)
+                                  if (hasCheckedToday) {
+                                    return SizedBox(
+                                      width: double.infinity,
+                                      child: FilledButton.icon(
+                                        icon: const Icon(Icons.check_circle),
+                                        label: const Text('✔ Sudah Berhasil Hari Ini'),
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: Colors.green.shade100,
+                                          foregroundColor: Colors.green.shade800,
+                                          disabledBackgroundColor: Colors.green.shade100,
+                                          disabledForegroundColor: Colors.green.shade800,
+                                        ),
+                                        onPressed: null, // Disabled karena sudah check-in
+                                      ),
+                                    );
+                                  }
+                                  
+                                  // State: loading
+                                  if (isLoading) {
+                                    return SizedBox(
+                                      width: double.infinity,
+                                      child: FilledButton.icon(
+                                        icon: const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                        label: const Text('Memproses...'),
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                          foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          disabledBackgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                          disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                        onPressed: null, // Disabled saat loading
+                                      ),
+                                    );
+                                  }
+                                  
+                                  // State: normal (bisa diklik) - Strong Blue
+                                  return SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton.icon(
+                                      icon: const Icon(Icons.check_circle_outline),
+                                      label: const Text('Mark Success'),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.blue.shade700, // Strong blue
+                                        foregroundColor: Colors.white,
+                                        elevation: 2,
+                                      ),
+                                      onPressed: () async {
                                           final p = context.read<ChallengeProvider>();
                                           final res = await p.checkIn(
                                             userChallengeId: userChallenge.id,
@@ -302,12 +437,14 @@ class ProgressSummaryWidget extends StatelessWidget {
                                             }
                                           }
                                         },
-                                ),
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
                         );
-                      }).toList(),
+                      }),
                   ],
                 ),
               ),
