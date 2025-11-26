@@ -4,6 +4,8 @@ import '../../domain/usecases/sign_in_usecase.dart';
 import '../../domain/usecases/sign_up_usecase.dart';
 import '../../domain/usecases/sign_out_usecase.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
+import '../../domain/usecases/update_user_usecase.dart';
+import '../../domain/usecases/update_credentials_usecase.dart';
 
 /// AuthProvider untuk mengelola state authentication
 /// Menggunakan ChangeNotifier untuk state management
@@ -25,6 +27,8 @@ class AuthProvider extends ChangeNotifier {
 
   /// Instance dari GetCurrentUserUsecase
   final GetCurrentUserUsecase getCurrentUserUsecase;
+  final UpdateUserUsecase updateUserUsecase;
+  final UpdateCredentialsUsecase updateCredentialsUsecase;
 
   /// Current user yang sedang login
   /// Hanya disimpan di memory, tidak persist ke local storage
@@ -43,6 +47,8 @@ class AuthProvider extends ChangeNotifier {
     required this.signUpUsecase,
     required this.signOutUsecase,
     required this.getCurrentUserUsecase,
+    required this.updateUserUsecase,
+    required this.updateCredentialsUsecase,
   });
 
   /// Getter untuk current user
@@ -174,6 +180,101 @@ class AuthProvider extends ChangeNotifier {
         return true;
       },
     );
+  }
+
+  Future<bool> updateUser(AuthUser user) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    final result = await updateUserUsecase(user);
+
+    _isLoading = false;
+
+    return result.fold(
+      (failure) {
+        _error = failure.message;
+        notifyListeners();
+        return false;
+      },
+      (updated) {
+        _currentUser = updated;
+        _error = null;
+        notifyListeners();
+        return true;
+      },
+    );
+  }
+
+  Future<bool> updateProfile({
+    String? fullName,
+    String? email,
+    String? newPassword,
+  }) async {
+    if (_currentUser == null) {
+      _error = 'Tidak ada user yang login';
+      notifyListeners();
+      return false;
+    }
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    var localUser = _currentUser!;
+    final needsProfileUpdate = (fullName != null && fullName != localUser.fullName) ||
+        (email != null && email != localUser.email);
+
+    if (needsProfileUpdate) {
+      final updatedEntity = localUser.copyWith(
+        fullName: fullName ?? localUser.fullName,
+        email: email ?? localUser.email,
+      );
+      final res = await updateUserUsecase(updatedEntity);
+      final ok = res.fold(
+        (f) {
+          _error = f.message;
+          return false;
+        },
+        (u) {
+          localUser = u;
+          return true;
+        },
+      );
+      if (!ok) {
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    }
+
+    if ((email != null && email != _currentUser!.email) ||
+        (newPassword != null && newPassword.isNotEmpty)) {
+      final res2 = await updateCredentialsUsecase(
+        UpdateCredentialsParams(email: email, password: newPassword),
+      );
+      final ok2 = res2.fold(
+        (f) {
+          _error = f.message;
+          return false;
+        },
+        (u) {
+          localUser = u;
+          return true;
+        },
+      );
+      if (!ok2) {
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    }
+
+    _currentUser = localUser;
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+    return true;
   }
 
   /// Method untuk mendapatkan current user

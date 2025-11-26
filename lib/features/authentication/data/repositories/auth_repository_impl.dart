@@ -130,5 +130,17 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(ServerFailure('Gagal melakukan update user: ${e.toString()}'));
     }
   }
+
+  @override
+  Future<Either<Failure, AuthUser>> updateCredentials({String? email, String? password}) async {
+    try {
+      final result = await remoteDatasource.updateCredentials(email: email, password: password);
+      return Right(result);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Gagal memperbarui kredensial: ${e.toString()}'));
+    }
+  }
 }
 

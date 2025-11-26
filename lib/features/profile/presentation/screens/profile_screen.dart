@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
+import 'edit_profile_screen.dart';
 
 /// Halaman profil dengan berbagai pengaturan dan ringkasan user.
 class ProfileScreen extends StatefulWidget {
@@ -62,7 +63,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       CircleAvatar(
                         radius: 32,
-                        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                        backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                         child: Icon(Icons.person, size: 36, color: Theme.of(context).colorScheme.primary),
                       ),
                       const SizedBox(width: 16),
@@ -94,7 +95,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _quickAction(
                         icon: Icons.edit_outlined,
                         label: 'Edit Profil',
-                        onTap: () => _showComingSoon('Edit Profil'),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const EditProfileScreen(),
+                            ),
+                          );
+                        },
                       ),
                       _quickAction(
                         icon: Icons.shield_moon_outlined,

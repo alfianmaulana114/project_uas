@@ -6,6 +6,8 @@ import 'features/authentication/domain/usecases/sign_in_usecase.dart';
 import 'features/authentication/domain/usecases/sign_up_usecase.dart';
 import 'features/authentication/domain/usecases/sign_out_usecase.dart';
 import 'features/authentication/domain/usecases/get_current_user_usecase.dart';
+import 'features/authentication/domain/usecases/update_user_usecase.dart';
+import 'features/authentication/domain/usecases/update_credentials_usecase.dart';
 import 'features/authentication/presentation/providers/auth_provider.dart';
 import 'features/challenge/data/datasources/challenge_remote_datasource.dart';
 import 'features/challenge/data/repositories/challenge_repository_impl.dart';
@@ -116,6 +118,13 @@ Future<void> init() async {
     () => GetCurrentUserUsecase(sl<AuthRepository>()),
   );
 
+  sl.registerLazySingleton(
+    () => UpdateUserUsecase(sl<AuthRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => UpdateCredentialsUsecase(sl<AuthRepository>()),
+  );
+
   /// Challenge Use Cases
   sl.registerLazySingleton(
     () => GetAllChallengesUsecase(sl<ChallengeRepository>()),
@@ -162,6 +171,8 @@ Future<void> init() async {
       signUpUsecase: sl<SignUpUsecase>(),
       signOutUsecase: sl<SignOutUsecase>(),
       getCurrentUserUsecase: sl<GetCurrentUserUsecase>(),
+      updateUserUsecase: sl<UpdateUserUsecase>(),
+      updateCredentialsUsecase: sl<UpdateCredentialsUsecase>(),
     ),
   );
 

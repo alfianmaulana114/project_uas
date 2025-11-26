@@ -101,7 +101,7 @@ class _StreakCelebrationWidgetState extends State<StreakCelebrationWidget>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.orange.shade200.withOpacity(0.5),
+                  color: Colors.orange.shade200.withValues(alpha: 0.5),
                   blurRadius: 12,
                   spreadRadius: 2,
                 ),

@@ -1,6 +1,8 @@
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../models/auth_user_model.dart';
+import '../../domain/entities/auth_user.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sfb hide AuthException, AuthUser;
 
 /// Abstract class untuk remote datasource authentication
 /// Mengikuti konsep Dependency Inversion Principle (SOLID)
@@ -32,7 +34,8 @@ abstract class AuthRemoteDatasource {
   /// Method untuk sign out user
   /// Throws AuthException jika gagal
   Future<void> signOut();
-  Future<UserModel> updateUser(UserModel user);
+  Future<AuthUserModel> updateUser(AuthUser user);
+  Future<AuthUserModel> updateCredentials({String? email, String? password});
 
   /// Method untuk mendapatkan user yang sedang login
   /// Mengembalikan AuthUserModel? jika ada user yang login
@@ -179,11 +182,13 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
 
         /// Coba ambil data user yang sudah ada (dari trigger)
         try {
-          final existingUserData = await SupabaseConfig.client
+          final existingList = await SupabaseConfig.client
               .from('users')
               .select()
-              .eq('id', response.user!.id)
-              .maybeSingle();
+              .eq('id', response.user!.id);
+          final existingUserData = (existingList is List && existingList.isNotEmpty)
+              ? existingList.first as Map<String, dynamic>
+              : null;
 
           /// Jika profil sudah ada (dari trigger), update dengan data tambahan
           if (existingUserData != null) {
@@ -204,7 +209,6 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
           }
         } catch (e) {
           /// Jika error saat get/update, lanjut ke insert
-          print('Error getting/updating existing user: $e');
         }
 
         /// Jika profil belum ada, insert baru
@@ -264,7 +268,6 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
         throw lastError ?? Exception('Unknown error');
       } catch (e) {
         /// Log error untuk debugging
-        print('Error inserting user: $e');
         
         /// Jika error karena tabel tidak ditemukan (setelah retry) atau 404
         if (e.toString().contains('Could not find the table') ||
@@ -335,7 +338,6 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
       }
     } catch (e) {
       /// Log error untuk debugging
-      print('SignUp error: $e');
       
       /// Jika terjadi error, convert ke AuthException
       if (e is AuthException) {
@@ -462,7 +464,7 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
     try {
       final response = await SupabaseConfig.client
           .from('users')
-          .update(user.toJson())
+          .update(AuthUserModel.fromEntity(user).toJson())
           .eq('id', user.id)
           .select()
           .single();
@@ -470,6 +472,42 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
       return AuthUserModel.fromJson(response);
     } catch (e) {
       throw ServerException('Gagal memperbarui data pengguna: $e');
+    }
+  }
+
+  @override
+  Future<AuthUserModel> updateCredentials({String? email, String? password}) async {
+    try {
+      await SupabaseConfig.client.auth.updateUser(sfb.UserAttributes(
+        email: email,
+        password: password,
+      ));
+
+      final current = SupabaseConfig.client.auth.currentUser;
+      if (current == null) {
+        throw const AuthException('Tidak ada user yang login');
+      }
+
+      Map<String, dynamic> response;
+      if (email != null && email.isNotEmpty) {
+        response = await SupabaseConfig.client
+            .from('users')
+            .update({'email': email})
+            .eq('id', current.id)
+            .select()
+            .single();
+      } else {
+        response = await SupabaseConfig.client
+            .from('users')
+            .select()
+            .eq('id', current.id)
+            .single();
+      }
+
+      return AuthUserModel.fromJson(response);
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException('Gagal memperbarui kredensial: ${e.toString()}');
     }
   }
 }

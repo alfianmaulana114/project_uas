@@ -35,6 +35,7 @@ abstract class AuthRepository {
   /// Left = Failure, Right = void (success)
   Future<Either<Failure, void>> signOut();
   Future<Either<Failure, AuthUser>> updateUser(AuthUser user);
+  Future<Either<Failure, AuthUser>> updateCredentials({String? email, String? password});
 
   /// Method untuk mendapatkan user yang sedang login
   /// Mengembalikan Either<Failure, AuthUser?>
