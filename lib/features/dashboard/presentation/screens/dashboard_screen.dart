@@ -12,6 +12,7 @@ import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../analytics/presentation/providers/analytics_provider.dart';
 import '../../../analytics/domain/entities/daily_checkin_stat.dart';
 import '../../../analytics/presentation/widgets/checkin_bar_chart.dart';
+import '../../../journal/presentation/screens/journal_list_screen.dart';
 
 /// Dashboard Screen
 /// Screen utama aplikasi dengan navigation bar
@@ -32,6 +33,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _index = 1; // Switch to Challenge tab
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
@@ -75,6 +81,8 @@ class _HomeTabState extends State<_HomeTab> {
   late final String _quote;
   int? _previousStreak;
   bool _showStreakCelebration = false;
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0.0;
   
   static const List<String> _quotes = [
     'Kurangi scroll, tambahkan langkah menuju tujuanmu.',
@@ -88,6 +96,13 @@ class _HomeTabState extends State<_HomeTab> {
   void initState() {
     super.initState();
     _quote = _quotes[DateTime.now().day % _quotes.length];
+    _scrollController.addListener(() {
+      if (mounted) {
+        setState(() {
+          _scrollOffset = _scrollController.offset;
+        });
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ChallengeProvider>().load();
       final auth = context.read<AuthProvider>();
@@ -187,82 +202,101 @@ class _HomeTabState extends State<_HomeTab> {
               RefreshIndicator(
                 onRefresh: _refreshData,
                 child: ListView(
+                  controller: _scrollController,
                   padding: const EdgeInsets.all(16),
                   physics: const BouncingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics(),
                   ),
                   children: [
-                    _HomeHeader(
-                      name: _displayName(authProvider),
-                      streak: currentStreak,
-                      quote: _quote,
-                      recommendedTarget: recommendedTarget,
-                      bestDay: bestDay,
+                    Transform.translate(
+                      offset: Offset(0, -_scrollOffset * 0.2),
+                      child: Opacity(
+                        opacity: (1 - (_scrollOffset / 200).clamp(0.0, 1.0)),
+                        child: _HomeHeader(
+                          name: _displayName(authProvider),
+                          streak: currentStreak,
+                          quote: _quote,
+                          recommendedTarget: recommendedTarget,
+                          bestDay: bestDay,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    _QuickActionsGrid(actions: [
-                      _QuickActionData(
-                        title: 'Mulai Challenge',
-                        subtitle: 'Cari tantangan baru',
-                        icon: Icons.flag_outlined,
-                        color: const Color(0xFFFF7A18),
-                        onTap: widget.onNavigateToChallenges,
-                      ),
-                      _QuickActionData(
-                        title: 'Atur Target',
-                        subtitle: 'Sesuaikan limit harian',
-                        icon: Icons.my_location_outlined,
-                        color: const Color(0xFFFF9E42),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const TargetScreen()),
-                          );
-                        },
-                      ),
-                      _QuickActionData(
-                        title: 'Lihat Progress',
-                        subtitle: 'Insight mingguan',
-                        icon: Icons.insights_outlined,
-                        color: const Color(0xFFFFC77B),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
-                          );
-                        },
-                      ),
-                      _QuickActionData(
-                        title: 'Catat Mood',
-                        subtitle: 'Refleksi harian',
-                        icon: Icons.edit_note_outlined,
-                        color: const Color(0xFF374151),
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Fitur catatan akan hadir segera')),
-                          );
-                        },
-                      ),
-                    ]),
-                    const SizedBox(height: 16),
-                    _ActiveChallengeHighlight(
-                      userChallenge: activeChallenge,
-                      challengeDetail: challengeDetail,
-                      onSeeAll: widget.onNavigateToChallenges,
+                    Transform.translate(
+                      offset: Offset(0, -_scrollOffset * 0.15),
+                      child: _QuickActionsGrid(actions: [
+                        _QuickActionData(
+                          title: 'Mulai Challenge',
+                          subtitle: 'Cari tantangan baru',
+                          icon: Icons.flag_outlined,
+                          color: const Color(0xFFFF7A18),
+                          onTap: widget.onNavigateToChallenges,
+                        ),
+                        _QuickActionData(
+                          title: 'Atur Target',
+                          subtitle: 'Sesuaikan limit harian',
+                          icon: Icons.my_location_outlined,
+                          color: const Color(0xFFFF9E42),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const TargetScreen()),
+                            );
+                          },
+                        ),
+                        _QuickActionData(
+                          title: 'Lihat Progress',
+                          subtitle: 'Insight mingguan',
+                          icon: Icons.insights_outlined,
+                          color: const Color(0xFFFFC77B),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+                            );
+                          },
+                        ),
+                        _QuickActionData(
+                          title: 'Catat Mood',
+                          subtitle: 'Refleksi harian',
+                          icon: Icons.edit_note_outlined,
+                          color: const Color(0xFF374151),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const JournalListScreen()),
+                            );
+                          },
+                        ),
+                      ]),
                     ),
                     const SizedBox(height: 16),
-                    _HomeAnalyticsPreview(
-                      totalPoints: stats?.totalPoints ?? 0,
-                      completedChallenges: stats?.completedChallenges ?? 0,
-                      longestStreak: stats?.longestStreak ?? 0,
-                      weekly: weekly,
+                    Transform.translate(
+                      offset: Offset(0, -_scrollOffset * 0.1),
+                      child: _ActiveChallengeHighlight(
+                        userChallenge: activeChallenge,
+                        challengeDetail: challengeDetail,
+                        onSeeAll: widget.onNavigateToChallenges,
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    _HomeTipsCard(
-                      tips: const [
-                        'Kurangi 15-30 menit setiap minggu',
-                        'Kunci aplikasi paling mengganggu saat jam fokus',
-                        'Gunakan mode fokus pagi & malam',
-                        'Rayakan kemenangan kecil harian',
-                      ],
+                    Transform.translate(
+                      offset: Offset(0, -_scrollOffset * 0.05),
+                      child: _HomeAnalyticsPreview(
+                        totalPoints: stats?.totalPoints ?? 0,
+                        completedChallenges: stats?.completedChallenges ?? 0,
+                        longestStreak: stats?.longestStreak ?? 0,
+                        weekly: weekly,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Transform.translate(
+                      offset: Offset(0, -_scrollOffset * 0.02),
+                      child: _HomeTipsCard(
+                        tips: const [
+                          'Kurangi 15-30 menit setiap minggu',
+                          'Kunci aplikasi paling menganggu saat jam fokus',
+                          'Gunakan mode fokus pagi & malam',
+                          'Rayakan kemenangan kecil harian',
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -312,11 +346,21 @@ class _HomeHeader extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFC4C02), Color(0xFFFF8F4B)],
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.primary.withOpacity(0.9),
+            Theme.of(context).colorScheme.primary.withOpacity(0.7),
+          ],
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,27 +375,45 @@ class _HomeHeader extends StatelessWidget {
                         style: Theme.of(context)
                             .textTheme
                             .titleLarge
-                            ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 22,
+                            )),
                     const SizedBox(height: 4),
                     Text('Kontrol sosial media Anda',
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
-                            ?.copyWith(color: Colors.white70)),
+                            ?.copyWith(
+                              color: Colors.white.withOpacity(0.9),
+                              fontWeight: FontWeight.w500,
+                            )),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.local_fire_department, color: Colors.orange),
-                    const SizedBox(width: 4),
-                    Text('$streak hari', style: const TextStyle(fontWeight: FontWeight.w600)),
+                    const Icon(Icons.local_fire_department, color: Colors.orange, size: 20),
+                    const SizedBox(width: 6),
+                    Text('$streak hari', 
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      )),
                   ],
                 ),
               ),
@@ -360,8 +422,9 @@ class _HomeHeader extends StatelessWidget {
           const SizedBox(height: 20),
           Text('TARGET HARIAN',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white70,
+                    color: Colors.white.withOpacity(0.85),
                     letterSpacing: 1.5,
+                    fontWeight: FontWeight.w600,
                   )),
           const SizedBox(height: 4),
           Row(
@@ -430,33 +493,79 @@ class _QuickActionsGrid extends StatelessWidget {
           .map(
             (action) => SizedBox(
               width: cardWidth,
-              child: Material(
-                color: const Color(0xFFFDF7F3),
-                elevation: 0,
-                borderRadius: BorderRadius.circular(20),
-                child: InkWell(
+              child: Container(
+                decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  onTap: action.onTap,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleAvatar(
-                          radius: 22,
-                          backgroundColor: action.color.withOpacity(0.12),
-                          foregroundColor: action.color,
-                          child: Icon(action.icon),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(action.title,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text(action.subtitle, style: const TextStyle(color: Colors.grey)),
-                      ],
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      action.color.withOpacity(0.05),
+                      action.color.withOpacity(0.02),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: action.color.withOpacity(0.1),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: action.color.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: action.onTap,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  action.color.withOpacity(0.15),
+                                  action.color.withOpacity(0.1),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: action.color.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Icon(action.icon, color: action.color, size: 24),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(action.title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  )),
+                          const SizedBox(height: 6),
+                          Text(action.subtitle, 
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            )),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -498,27 +607,103 @@ class _ActiveChallengeHighlight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (userChallenge == null) {
-      return Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(context).colorScheme.primary.withOpacity(0.05),
+              Theme.of(context).colorScheme.primary.withOpacity(0.02),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.flag_outlined, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.flag_outlined, 
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   const Text('Belum ada challenge aktif',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      )),
                 ],
               ),
-              const SizedBox(height: 12),
-              const Text('Mulai tantangan baru untuk menjaga fokus detoks sosial media.'),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: onSeeAll,
-                child: const Text('Lihat Challenge'),
+              Text(
+                'Mulai tantangan baru untuk menjaga fokus detoks sosial media.',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: FilledButton(
+                  onPressed: onSeeAll,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Lihat Challenge',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -538,56 +723,144 @@ class _ActiveChallengeHighlight extends StatelessWidget {
         challengeDetail?.challengeName ?? userChallenge!.category.replaceAll('_', ' ').toUpperCase();
     final subtitle = challengeDetail?.description ?? 'Tetap konsisten per hari';
 
-    return Card(
-      color: const Color(0xFFFFF2EB),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            Theme.of(context).colorScheme.secondary.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.check_circle_outline, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(context).colorScheme.secondary,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.check_circle_outline,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text(subtitle, style: const TextStyle(color: Colors.grey)),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                Text('${userChallenge!.successDays} sukses', style: const TextStyle(fontSize: 12)),
+                Text('${userChallenge!.successDays} sukses',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: LinearProgressIndicator(
                 value: progress,
-                minHeight: 14,
-                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                valueColor:
-                    AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                minHeight: 10,
+                backgroundColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Hari ${userChallenge!.currentDay}/$totalDays',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text('Mulai ${userChallenge!.startDate.day}/${userChallenge!.startDate.month}'),
+                Text(
+                  'Hari ${userChallenge!.currentDay}/$totalDays',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  'Mulai ${userChallenge!.startDate.day}/${userChallenge!.startDate.month}',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
               ],
             ),
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: onSeeAll,
-                child: const Text('Kelola Challenge'),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TextButton(
+                  onPressed: onSeeAll,
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.primary,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Kelola Challenge',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],

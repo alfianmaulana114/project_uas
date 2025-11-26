@@ -79,11 +79,14 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 48),
 
-                /// Logo atau Icon aplikasi
-                Icon(
-                  Icons.phone_android,
-                  size: 80,
-                  color: Theme.of(context).colorScheme.primary,
+                /// Logo aplikasi
+                Center(
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    height: 140,
+                    fit: BoxFit.contain,
+                    semanticLabel: 'Logo SosialBreak',
+                  ),
                 ),
 
                 const SizedBox(height: 24),

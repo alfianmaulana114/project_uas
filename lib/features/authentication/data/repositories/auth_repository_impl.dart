@@ -111,5 +111,24 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(ServerFailure('Gagal mendapatkan current user: ${e.toString()}'));
     }
   }
+
+  /// Method untuk update data user
+  /// Convert exception ke failure sesuai dengan Clean Architecture
+  @override
+  Future<Either<Failure, AuthUser>> updateUser(AuthUser user) async {
+    try {
+      /// Memanggil remote datasource untuk update user
+      final result = await remoteDatasource.updateUser(user);
+
+      /// Jika berhasil, return Right dengan AuthUser yang sudah diupdate
+      return Right(result);
+    } on AuthException catch (e) {
+      /// Jika terjadi AuthException, convert ke AuthFailure
+      return Left(AuthFailure(e.message));
+    } catch (e) {
+      /// Jika terjadi error lain, convert ke ServerFailure
+      return Left(ServerFailure('Gagal melakukan update user: ${e.toString()}'));
+    }
+  }
 }
 

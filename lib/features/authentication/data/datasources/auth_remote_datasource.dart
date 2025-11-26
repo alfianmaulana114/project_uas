@@ -32,6 +32,7 @@ abstract class AuthRemoteDatasource {
   /// Method untuk sign out user
   /// Throws AuthException jika gagal
   Future<void> signOut();
+  Future<UserModel> updateUser(UserModel user);
 
   /// Method untuk mendapatkan user yang sedang login
   /// Mengembalikan AuthUserModel? jika ada user yang login
@@ -453,6 +454,22 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
       /// Jika terjadi error, return null (bukan throw exception)
       /// Karena getCurrentUser bisa dipanggil saat user belum login
       return null;
+    }
+  }
+
+  @override
+  Future<AuthUserModel> updateUser(AuthUser user) async {
+    try {
+      final response = await SupabaseConfig.client
+          .from('users')
+          .update(user.toJson())
+          .eq('id', user.id)
+          .select()
+          .single();
+
+      return AuthUserModel.fromJson(response);
+    } catch (e) {
+      throw ServerException('Gagal memperbarui data pengguna: $e');
     }
   }
 }

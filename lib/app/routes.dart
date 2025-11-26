@@ -5,6 +5,7 @@ import '../features/authentication/presentation/screens/register_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/reward/presentation/screens/achievements_screen.dart';
 import '../features/analytics/presentation/screens/analytics_screen.dart';
+import '../features/journal/presentation/screens/journal_list_screen.dart';
 
 /// App Routes Configuration
 /// Mengikuti konsep Single Responsibility Principle
@@ -25,6 +26,8 @@ class AppRoutes {
   static const String achievements = '/achievements';
   /// Route name untuk analytics screen
   static const String analytics = '/analytics';
+  /// Route name untuk journal/mood screen
+  static const String journal = '/journal';
 
   /// Method untuk mendapatkan routes map
   /// Mengembalikan Map<String, WidgetBuilder> untuk MaterialApp routes
@@ -47,6 +50,9 @@ class AppRoutes {
 
       /// Analytics screen
       analytics: (context) => const AnalyticsScreen(),
+
+      /// Journal/Mood screen
+      journal: (context) => const JournalListScreen(),
     };
   }
 
