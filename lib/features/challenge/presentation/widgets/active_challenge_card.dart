@@ -24,6 +24,36 @@ class ActiveChallengeCard extends StatelessWidget {
     SocialAppUsage(name: 'Twitter/X', minutesPerDay: 15, icon: Icons.alternate_email, isBlocked: false),
   ];
 
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'social_media':
+        return Icons.phone_android;
+      case 'olahraga':
+        return Icons.fitness_center;
+      case 'bersosialisasi':
+        return Icons.people;
+      case 'membaca_buku':
+        return Icons.menu_book;
+      default:
+        return Icons.flag;
+    }
+  }
+
+  Color _getCategoryColor(BuildContext context, String category) {
+    switch (category) {
+      case 'social_media':
+        return Colors.purple.shade400;
+      case 'olahraga':
+        return Colors.blue.shade400;
+      case 'bersosialisasi':
+        return Colors.green.shade400;
+      case 'membaca_buku':
+        return Colors.orange.shade400;
+      default:
+        return Theme.of(context).colorScheme.primary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<ChallengeProvider>().isLoading;
@@ -38,148 +68,320 @@ class ActiveChallengeCard extends StatelessWidget {
         ? (userChallenge.currentDay / totalDays).clamp(0.0, 1.0)
         : 0.0;
 
-    return Card(
-      color: Theme.of(context).colorScheme.primary.withOpacity(0.06),
+    final categoryColor = _getCategoryColor(context, userChallenge.category);
+    final categoryIcon = _getCategoryIcon(userChallenge.category);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            categoryColor.withOpacity(0.1),
+            categoryColor.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: categoryColor.withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: categoryColor.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.check_circle_outline),
-                const SizedBox(width: 8),
-                Text(userChallenge.category.replaceAll('_', ' ').toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // Progress Bar - Soft Blue
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: percent,
-                minHeight: 12,
-                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Colors.blue.shade200, // Soft blue
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: categoryColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    categoryIcon,
+                    color: categoryColor,
+                    size: 24,
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Label progress dengan icon - Font lebih besar
-            Row(
-              children: [
-                const Text(
-                  '📅',
-                  style: TextStyle(fontSize: 18),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Hari ${userChallenge.currentDay}/$totalDays',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                ),
-                const SizedBox(width: 16),
-                const Text(
-                  '✔',
-                  style: TextStyle(fontSize: 18),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '${userChallenge.successDays} sukses',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                ),
-              ],
-            ),
-            if (userChallenge.category == 'social_media') ...[
-              const SizedBox(height: 12),
-              SocialMediaChallengePanel(initialApps: _mockSocialApps),
-            ] else if (userChallenge.bookName != null || userChallenge.eventName != null) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  if (userChallenge.bookName != null) Chip(label: Text('Buku: ${userChallenge.bookName}')),
-                  if (userChallenge.eventName != null) Chip(label: Text('Event: ${userChallenge.eventName}')),
-                ],
-              ),
-            ],
-            const SizedBox(height: 12),
-            Row(
-              children: [
+                const SizedBox(width: 12),
                 Expanded(
-                  child: FilledButton.icon(
-                    icon: const Icon(Icons.thumb_up_outlined),
-                    label: const Text('Mark Success'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.blue.shade700, // Strong blue
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      disabledBackgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    onPressed: (isLoading || hasCheckedToday)
-                        ? null
-                        : () async {
-                            final p = context.read<ChallengeProvider>();
-                            final res = await p.checkIn(
-                                userChallengeId: userChallenge.id, isSuccess: true);
-                            if (res == null) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(p.error ?? 'Gagal check-in')),
-                                );
-                              }
-                              return;
-                            }
-                            // Update user stats in AuthProvider
-                            context.read<AuthProvider>().applyStatsUpdate(
-                                  currentStreak: res.currentStreak,
-                                  longestStreak: res.longestStreak,
-                                  totalPoints: res.totalPoints,
-                                );
-                            // Check and award achievements after a check-in or completion
-                            final rewards = await context
-                                .read<RewardProvider>()
-                                .checkAfterEvent(
-                                    trigger: res.challengeCompleted ? 'challenge_completed' : 'checkin');
-                            if (context.mounted && rewards.isNotEmpty) {
-                              await showDialog(
-                                context: context,
-                                builder: (_) => AchievementUnlockDialog(achievements: rewards),
-                              );
-                            }
-                            if (context.mounted) {
-                              if (res.alreadyCheckedInToday) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Sudah check-in hari ini')),
-                                );
-                              } else if (res.challengeCompleted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text(
-                                          'Challenge selesai! +${res.pointsAwarded} poin')),
-                                );
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Berhasil untuk hari ini. Lanjutkan lagi besok.')),
-                                );
-                              }
-                            }
-                          },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        userChallenge.category.replaceAll('_', ' ').toUpperCase(),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: categoryColor,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Challenge Aktif',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.star_rounded,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${userChallenge.pointsEarned}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+            // Progress Bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: percent,
+                minHeight: 10,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                valueColor: AlwaysStoppedAnimation<Color>(categoryColor),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Stats Row
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatItem(
+                    context,
+                    icon: Icons.calendar_today,
+                    label: 'Hari',
+                    value: '${userChallenge.currentDay}/$totalDays',
+                    color: categoryColor,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+                Expanded(
+                  child: _buildStatItem(
+                    context,
+                    icon: Icons.check_circle,
+                    label: 'Sukses',
+                    value: '${userChallenge.successDays}',
+                    color: categoryColor,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+                Expanded(
+                  child: _buildStatItem(
+                    context,
+                    icon: Icons.percent,
+                    label: 'Progress',
+                    value: '${(percent * 100).toInt()}%',
+                    color: categoryColor,
+                  ),
+                ),
+              ],
+            ),
+            if (userChallenge.category == 'social_media') ...[
+              const SizedBox(height: 20),
+              SocialMediaChallengePanel(initialApps: _mockSocialApps),
+            ] else if (userChallenge.bookName != null || userChallenge.eventName != null) ...[
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                children: [
+                  if (userChallenge.bookName != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.menu_book,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            userChallenge.bookName!,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (userChallenge.eventName != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.event,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            userChallenge.eventName!,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                icon: Icon(hasCheckedToday ? Icons.check_circle : Icons.thumb_up_outlined),
+                label: Text(hasCheckedToday ? 'Sudah Check-in Hari Ini' : 'Tandai Berhasil'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: categoryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  disabledBackgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  disabledForegroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                onPressed: (isLoading || hasCheckedToday)
+                    ? null
+                    : () async {
+                        final p = context.read<ChallengeProvider>();
+                        final res = await p.checkIn(
+                            userChallengeId: userChallenge.id, isSuccess: true);
+                        if (res == null) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(p.error ?? 'Gagal check-in')),
+                            );
+                          }
+                          return;
+                        }
+                        // Update user stats in AuthProvider
+                        context.read<AuthProvider>().applyStatsUpdate(
+                              currentStreak: res.currentStreak,
+                              longestStreak: res.longestStreak,
+                              totalPoints: res.totalPoints,
+                            );
+                        // Check and award achievements after a check-in or completion
+                        final rewards = await context
+                            .read<RewardProvider>()
+                            .checkAfterEvent(
+                                trigger: res.challengeCompleted ? 'challenge_completed' : 'checkin');
+                        if (context.mounted && rewards.isNotEmpty) {
+                          await showDialog(
+                            context: context,
+                            builder: (_) => AchievementUnlockDialog(achievements: rewards),
+                          );
+                        }
+                        if (context.mounted) {
+                          if (res.alreadyCheckedInToday) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Sudah check-in hari ini')),
+                            );
+                          } else if (res.challengeCompleted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text(
+                                      'Challenge selesai! +${res.pointsAwarded} poin')),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Berhasil untuk hari ini. Lanjutkan lagi besok.')),
+                            );
+                          }
+                        }
+                      },
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStatItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: color,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }

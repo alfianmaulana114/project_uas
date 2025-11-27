@@ -4,6 +4,7 @@ import '../../../../core/errors/failures.dart';
 import '../../domain/entities/auth_user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
+import '../models/auth_user_model.dart';
 
 /// Implementation dari AuthRepository
 /// Mengikuti konsep Clean Architecture - Data Layer
@@ -117,8 +118,11 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, AuthUser>> updateUser(AuthUser user) async {
     try {
+      /// Convert AuthUser entity ke AuthUserModel untuk datasource
+      final userModel = AuthUserModel.fromEntity(user);
+      
       /// Memanggil remote datasource untuk update user
-      final result = await remoteDatasource.updateUser(user);
+      final result = await remoteDatasource.updateUser(userModel);
 
       /// Jika berhasil, return Right dengan AuthUser yang sudah diupdate
       return Right(result);

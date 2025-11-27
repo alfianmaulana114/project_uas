@@ -11,25 +11,39 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _passwordFormKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
+  late final TextEditingController _usernameController;
   late final TextEditingController _emailController;
-  late final TextEditingController _passwordController;
+  late final TextEditingController _currentPasswordController;
+  late final TextEditingController _newPasswordController;
+  late final TextEditingController _confirmPasswordController;
   bool _isLoading = false;
+  bool _isChangingPassword = false;
+  bool _obscureCurrentPassword = true;
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void initState() {
     super.initState();
     final user = context.read<AuthProvider>().currentUser;
     _nameController = TextEditingController(text: user?.fullName ?? '');
+    _usernameController = TextEditingController(text: user?.username ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
-    _passwordController = TextEditingController();
+    _currentPasswordController = TextEditingController();
+    _newPasswordController = TextEditingController();
+    _confirmPasswordController = TextEditingController();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
-    _passwordController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -41,26 +55,108 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isLoading = true);
 
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.updateProfile(
-      fullName: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      newPassword: _passwordController.text.trim().isEmpty
-          ? null
-          : _passwordController.text.trim(),
+    final currentUser = authProvider.currentUser;
+    
+    if (currentUser == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User tidak ditemukan. Silakan login ulang.')),
+        );
+        setState(() => _isLoading = false);
+      }
+      return;
+    }
+
+    final newEmail = _emailController.text.trim();
+    final emailChanged = newEmail != currentUser.email;
+
+    // Jika email berubah, update email terlebih dahulu
+    if (emailChanged) {
+      final emailSuccess = await authProvider.updateEmail(newEmail);
+      if (!emailSuccess) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.error ?? 'Gagal memperbarui email.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
+    }
+
+    // Buat user yang diupdate dengan data baru
+    final updatedUser = currentUser.copyWith(
+      email: newEmail,
+      fullName: _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
+      username: _usernameController.text.trim().isEmpty ? null : _usernameController.text.trim(),
+    );
+
+    // Update ke Supabase melalui provider
+    final success = await authProvider.updateUser(updatedUser);
+
+    if (mounted) {
+      if (success) {
+        // Refresh current user untuk memastikan data terbaru dari Supabase
+        await authProvider.getCurrentUser();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil berhasil diperbarui!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Return true untuk memberi tahu parent screen bahwa update berhasil
+        Navigator.of(context).pop(true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? 'Gagal memperbarui profil.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _changePassword() async {
+    if (!_passwordFormKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() => _isChangingPassword = true);
+
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.changePassword(
+      currentPassword: _currentPasswordController.text.trim(),
+      newPassword: _newPasswordController.text.trim(),
     );
 
     if (mounted) {
       if (success) {
+        // Clear password fields setelah berhasil
+        _currentPasswordController.clear();
+        _newPasswordController.clear();
+        _confirmPasswordController.clear();
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profil berhasil diperbarui!')),
+          const SnackBar(
+            content: Text('Password berhasil diubah!'),
+            backgroundColor: Colors.green,
+          ),
         );
-        Navigator.of(context).pop();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.error ?? 'Gagal memperbarui profil.')),
+          SnackBar(
+            content: Text(authProvider.error ?? 'Gagal mengubah password.'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
-      setState(() => _isLoading = false);
+      setState(() => _isChangingPassword = false);
     }
   }
 
@@ -70,70 +166,223 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       appBar: AppBar(
         title: const Text('Edit Profil'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nama Lengkap',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Nama tidak boleh kosong';
-                  }
-                  return null;
-                },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Form Edit Profil
+            Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Informasi Profil',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Lengkap',
+                      hintText: 'Masukkan nama lengkap Anda',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person_outline),
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    validator: (value) {
+                      if (value != null && value.trim().isNotEmpty && value.trim().length < 2) {
+                        return 'Nama minimal 2 karakter';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                      hintText: 'Masukkan username Anda',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.alternate_email),
+                    ),
+                    textCapitalization: TextCapitalization.none,
+                    validator: (value) {
+                      if (value != null && value.trim().isNotEmpty) {
+                        if (value.trim().length < 3) {
+                          return 'Username minimal 3 karakter';
+                        }
+                        if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value.trim())) {
+                          return 'Username hanya boleh huruf, angka, dan underscore';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      hintText: 'Masukkan email Anda',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    textCapitalization: TextCapitalization.none,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Email tidak boleh kosong';
+                      }
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
+                        return 'Format email tidak valid';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: _isLoading ? null : _updateProfile,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text('Simpan Perubahan'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  final v = value?.trim() ?? '';
-                  if (v.isEmpty) return 'Email tidak boleh kosong';
-                  final emailRegex = RegExp(r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$');
-                  if (!emailRegex.hasMatch(v)) return 'Format email tidak valid';
-                  return null;
-                },
+            ),
+            const SizedBox(height: 32),
+            const Divider(),
+            const SizedBox(height: 16),
+            // Form Ubah Password
+            Form(
+              key: _passwordFormKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Ubah Password',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _currentPasswordController,
+                    decoration: InputDecoration(
+                      labelText: 'Password Saat Ini',
+                      hintText: 'Masukkan password saat ini',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureCurrentPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureCurrentPassword = !_obscureCurrentPassword;
+                          });
+                        },
+                      ),
+                    ),
+                    obscureText: _obscureCurrentPassword,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Password saat ini tidak boleh kosong';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _newPasswordController,
+                    decoration: InputDecoration(
+                      labelText: 'Password Baru',
+                      hintText: 'Masukkan password baru',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureNewPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureNewPassword = !_obscureNewPassword;
+                          });
+                        },
+                      ),
+                    ),
+                    obscureText: _obscureNewPassword,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Password baru tidak boleh kosong';
+                      }
+                      if (value.trim().length < 6) {
+                        return 'Password minimal 6 karakter';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    decoration: InputDecoration(
+                      labelText: 'Konfirmasi Password Baru',
+                      hintText: 'Ulangi password baru',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.lock_clock),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureConfirmPassword = !_obscureConfirmPassword;
+                          });
+                        },
+                      ),
+                    ),
+                    obscureText: _obscureConfirmPassword,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Konfirmasi password tidak boleh kosong';
+                      }
+                      if (value.trim() != _newPasswordController.text.trim()) {
+                        return 'Password tidak cocok';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  OutlinedButton(
+                    onPressed: _isChangingPassword ? null : _changePassword,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: _isChangingPassword
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Ubah Password'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password Baru (opsional)',
-                  border: OutlineInputBorder(),
-                ),
-                obscureText: true,
-                validator: (value) {
-                  final v = value?.trim() ?? '';
-                  if (v.isEmpty) return null;
-                  if (v.length < 6) return 'Password minimal 6 karakter';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _updateProfile,
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Simpan Perubahan'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,7 +1,6 @@
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../models/auth_user_model.dart';
-import '../../domain/entities/auth_user.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sfb hide AuthException, AuthUser;
 
 /// Abstract class untuk remote datasource authentication
@@ -34,7 +33,18 @@ abstract class AuthRemoteDatasource {
   /// Method untuk sign out user
   /// Throws AuthException jika gagal
   Future<void> signOut();
-  Future<AuthUserModel> updateUser(AuthUser user);
+  
+  /// Method untuk update user
+  /// [user] adalah user yang akan diupdate
+  /// Mengembalikan AuthUserModel jika berhasil
+  /// Throws AuthException jika gagal
+  Future<AuthUserModel> updateUser(AuthUserModel user);
+  
+  /// Method untuk update credentials (email dan password)
+  /// [email] adalah email baru (opsional)
+  /// [password] adalah password baru (opsional)
+  /// Mengembalikan AuthUserModel jika berhasil
+  /// Throws AuthException jika gagal
   Future<AuthUserModel> updateCredentials({String? email, String? password});
 
   /// Method untuk mendapatkan user yang sedang login
@@ -186,8 +196,8 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
               .from('users')
               .select()
               .eq('id', response.user!.id);
-          final existingUserData = (existingList is List && existingList.isNotEmpty)
-              ? existingList.first as Map<String, dynamic>
+          final existingUserData = existingList.isNotEmpty
+              ? existingList.first
               : null;
 
           /// Jika profil sudah ada (dari trigger), update dengan data tambahan
@@ -293,15 +303,9 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
             e.toString().contains('unique constraint') ||
             e.toString().contains('violates unique constraint')) {
           /// Jika duplicate key pada id, berarti profil sudah ada (dari trigger)
-          /// Coba ambil data yang sudah ada
+          /// Update dengan data tambahan jika perlu
           if (e.toString().contains('id') || e.toString().contains('users_pkey')) {
             try {
-              final existingUserData = await SupabaseConfig.client
-                  .from('users')
-                  .select()
-                  .eq('id', response.user!.id)
-                  .single();
-              
               /// Update dengan data tambahan jika perlu
               final updatedUserData = await SupabaseConfig.client
                   .from('users')
@@ -460,17 +464,45 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
   }
 
   @override
-  Future<AuthUserModel> updateUser(AuthUser user) async {
+  Future<AuthUserModel> updateUser(AuthUserModel user) async {
     try {
+      // Hanya update field yang bisa diubah user (email, full_name, dan username)
+      // Jangan update stats (total_points, current_streak, longest_streak) karena itu dihitung otomatis
+      final updateData = <String, dynamic>{};
+      updateData['email'] = user.email;
+      if (user.fullName != null) {
+        updateData['full_name'] = user.fullName;
+      } else {
+        updateData['full_name'] = null;
+      }
+      if (user.username != null) {
+        updateData['username'] = user.username;
+      } else {
+        updateData['username'] = null;
+      }
+      
+      // Update ke Supabase
       final response = await SupabaseConfig.client
           .from('users')
-          .update(AuthUserModel.fromEntity(user).toJson())
+          .update(updateData)
           .eq('id', user.id)
           .select()
           .single();
 
+      // Return user yang sudah diupdate dari Supabase (dengan data terbaru)
       return AuthUserModel.fromJson(response);
     } catch (e) {
+      // Handle error spesifik
+      if (e.toString().contains('duplicate key') || 
+          e.toString().contains('unique constraint')) {
+        if (e.toString().contains('username')) {
+          throw AuthException('Username sudah digunakan. Silakan pilih username lain.');
+        }
+        if (e.toString().contains('email')) {
+          throw AuthException('Email sudah digunakan. Silakan pilih email lain.');
+        }
+        throw AuthException('Data sudah digunakan. Silakan pilih yang lain.');
+      }
       throw ServerException('Gagal memperbarui data pengguna: $e');
     }
   }

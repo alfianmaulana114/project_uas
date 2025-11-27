@@ -1,11 +1,12 @@
 import 'package:flutter/foundation.dart';
-import '../../domain/entities/auth_user.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthUser;
+import '../../../../core/config/supabase_config.dart';
+import '../../domain/entities/auth_user.dart' as auth_entity;
 import '../../domain/usecases/sign_in_usecase.dart';
 import '../../domain/usecases/sign_up_usecase.dart';
 import '../../domain/usecases/sign_out_usecase.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/update_user_usecase.dart';
-import '../../domain/usecases/update_credentials_usecase.dart';
 
 /// AuthProvider untuk mengelola state authentication
 /// Menggunakan ChangeNotifier untuk state management
@@ -27,12 +28,13 @@ class AuthProvider extends ChangeNotifier {
 
   /// Instance dari GetCurrentUserUsecase
   final GetCurrentUserUsecase getCurrentUserUsecase;
+
+  /// Instance dari UpdateUserUsecase
   final UpdateUserUsecase updateUserUsecase;
-  final UpdateCredentialsUsecase updateCredentialsUsecase;
 
   /// Current user yang sedang login
   /// Hanya disimpan di memory, tidak persist ke local storage
-  AuthUser? _currentUser;
+  auth_entity.AuthUser? _currentUser;
 
   /// Error message jika terjadi error
   String? _error;
@@ -48,11 +50,10 @@ class AuthProvider extends ChangeNotifier {
     required this.signOutUsecase,
     required this.getCurrentUserUsecase,
     required this.updateUserUsecase,
-    required this.updateCredentialsUsecase,
   });
 
   /// Getter untuk current user
-  AuthUser? get currentUser => _currentUser;
+  auth_entity.AuthUser? get currentUser => _currentUser;
 
   /// Getter untuk error message
   String? get error => _error;
@@ -182,101 +183,6 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
-  Future<bool> updateUser(AuthUser user) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    final result = await updateUserUsecase(user);
-
-    _isLoading = false;
-
-    return result.fold(
-      (failure) {
-        _error = failure.message;
-        notifyListeners();
-        return false;
-      },
-      (updated) {
-        _currentUser = updated;
-        _error = null;
-        notifyListeners();
-        return true;
-      },
-    );
-  }
-
-  Future<bool> updateProfile({
-    String? fullName,
-    String? email,
-    String? newPassword,
-  }) async {
-    if (_currentUser == null) {
-      _error = 'Tidak ada user yang login';
-      notifyListeners();
-      return false;
-    }
-
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    var localUser = _currentUser!;
-    final needsProfileUpdate = (fullName != null && fullName != localUser.fullName) ||
-        (email != null && email != localUser.email);
-
-    if (needsProfileUpdate) {
-      final updatedEntity = localUser.copyWith(
-        fullName: fullName ?? localUser.fullName,
-        email: email ?? localUser.email,
-      );
-      final res = await updateUserUsecase(updatedEntity);
-      final ok = res.fold(
-        (f) {
-          _error = f.message;
-          return false;
-        },
-        (u) {
-          localUser = u;
-          return true;
-        },
-      );
-      if (!ok) {
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-    }
-
-    if ((email != null && email != _currentUser!.email) ||
-        (newPassword != null && newPassword.isNotEmpty)) {
-      final res2 = await updateCredentialsUsecase(
-        UpdateCredentialsParams(email: email, password: newPassword),
-      );
-      final ok2 = res2.fold(
-        (f) {
-          _error = f.message;
-          return false;
-        },
-        (u) {
-          localUser = u;
-          return true;
-        },
-      );
-      if (!ok2) {
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-    }
-
-    _currentUser = localUser;
-    _isLoading = false;
-    _error = null;
-    notifyListeners();
-    return true;
-  }
-
   /// Method untuk mendapatkan current user
   /// Biasanya dipanggil saat app pertama kali dibuka
   Future<void> getCurrentUser() async {
@@ -313,6 +219,122 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  /// Method untuk update user
+  /// [user] adalah user yang akan diupdate
+  /// Mengembalikan true jika berhasil, false jika gagal
+  Future<bool> updateUser(auth_entity.AuthUser user) async {
+    /// Set loading state menjadi true
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    /// Memanggil update user use case
+    final result = await updateUserUsecase(user);
+
+    /// Set loading state menjadi false
+    _isLoading = false;
+
+    /// Handle result
+    return result.fold(
+      /// Jika gagal (Left = Failure)
+      (failure) {
+        _error = failure.message;
+        notifyListeners();
+        return false;
+      },
+      /// Jika berhasil (Right = AuthUser)
+      (updatedUser) {
+        _currentUser = updatedUser;
+        _error = null;
+        notifyListeners();
+        return true;
+      },
+    );
+  }
+
+  /// Method untuk update email user
+  /// [newEmail] adalah email baru
+  /// Mengembalikan true jika berhasil, false jika gagal
+  Future<bool> updateEmail(String newEmail) async {
+    /// Set loading state menjadi true
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      /// Update email di Supabase Auth
+      await SupabaseConfig.client.auth.updateUser(
+        UserAttributes(email: newEmail),
+      );
+
+      /// Set loading state menjadi false
+      _isLoading = false;
+      _error = null;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      /// Set loading state menjadi false
+      _isLoading = false;
+      _error = 'Gagal memperbarui email: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Method untuk change password user
+  /// [currentPassword] adalah password saat ini
+  /// [newPassword] adalah password baru
+  /// Mengembalikan true jika berhasil, false jika gagal
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    /// Set loading state menjadi true
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      /// Update password di Supabase Auth
+      /// Supabase memerlukan re-authentication untuk change password
+      final currentUser = SupabaseConfig.client.auth.currentUser;
+      if (currentUser?.email == null) {
+        _isLoading = false;
+        _error = 'User tidak ditemukan';
+        notifyListeners();
+        return false;
+      }
+
+      /// Re-authenticate dengan password saat ini
+      await SupabaseConfig.client.auth.signInWithPassword(
+        email: currentUser!.email!,
+        password: currentPassword,
+      );
+
+      /// Update password
+      await SupabaseConfig.client.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+
+      /// Set loading state menjadi false
+      _isLoading = false;
+      _error = null;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      /// Set loading state menjadi false
+      _isLoading = false;
+      final errorMsg = e.toString().toLowerCase();
+      if (errorMsg.contains('invalid') || errorMsg.contains('password')) {
+        _error = 'Password saat ini salah';
+      } else {
+        _error = 'Gagal mengubah password: ${e.toString()}';
+      }
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Apply stats update after actions like check-in

@@ -5,7 +5,7 @@ import '../../../challenge/presentation/screens/challenge_list_screen.dart';
 import '../../../challenge/presentation/providers/challenge_provider.dart';
 import '../../../challenge/domain/entities/challenge.dart';
 import '../../../challenge/domain/entities/user_challenge.dart';
-import '../../../target/presentation/screens/target_screen.dart';
+import '../../../reward/presentation/screens/reward_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
 import '../widgets/streak_celebration_widget.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
@@ -45,7 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final pages = <Widget>[
       _HomeTab(onNavigateToChallenges: _switchToChallengeTab),
       const ChallengeListScreen(),
-      const TargetScreen(),
+      const RewardScreen(),
       const AnalyticsScreen(),
       const ProfileScreen(),
     ];
@@ -58,7 +58,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.flag_outlined), selectedIcon: Icon(Icons.flag), label: 'Challenge'),
-          NavigationDestination(icon: Icon(Icons.my_location_outlined), selectedIcon: Icon(Icons.my_location), label: 'Target'),
+          NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events), label: 'Reward'),
           NavigationDestination(icon: Icon(Icons.insights_outlined), selectedIcon: Icon(Icons.insights), label: 'Analytics'),
           NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profil'),
         ],
@@ -233,13 +233,13 @@ class _HomeTabState extends State<_HomeTab> {
                           onTap: widget.onNavigateToChallenges,
                         ),
                         _QuickActionData(
-                          title: 'Atur Target',
-                          subtitle: 'Sesuaikan limit harian',
-                          icon: Icons.my_location_outlined,
+                          title: 'Lihat Reward',
+                          subtitle: 'Poin & pencapaian',
+                          icon: Icons.emoji_events_outlined,
                           color: const Color(0xFFFF9E42),
                           onTap: () {
                             Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const TargetScreen()),
+                              MaterialPageRoute(builder: (_) => const RewardScreen()),
                             );
                           },
                         ),

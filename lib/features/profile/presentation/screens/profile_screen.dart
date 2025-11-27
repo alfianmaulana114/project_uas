@@ -35,12 +35,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String label,
     required VoidCallback onTap,
   }) {
-    return SizedBox(
-      width: 150,
-      child: FilledButton.tonalIcon(
-        icon: Icon(icon),
-        label: Text(label, textAlign: TextAlign.center),
-        onPressed: onTap,
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        child: FilledButton.tonalIcon(
+          icon: Icon(icon),
+          label: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13),
+          ),
+          onPressed: onTap,
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -63,7 +75,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       CircleAvatar(
                         radius: 32,
-                        backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                        backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
                         child: Icon(Icons.person, size: 36, color: Theme.of(context).colorScheme.primary),
                       ),
                       const SizedBox(width: 16),
@@ -88,19 +100,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 20),
                   Text('Aksi Cepat', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
+                  Row(
                     children: [
                       _quickAction(
                         icon: Icons.edit_outlined,
                         label: 'Edit Profil',
-                        onTap: () {
-                          Navigator.of(context).push(
+                        onTap: () async {
+                          final result = await Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => const EditProfileScreen(),
                             ),
                           );
+                          // Refresh data setelah edit jika perlu
+                          if (result == true && mounted) {
+                            final auth = context.read<AuthProvider>();
+                            await auth.getCurrentUser();
+                          }
                         },
                       ),
                       _quickAction(

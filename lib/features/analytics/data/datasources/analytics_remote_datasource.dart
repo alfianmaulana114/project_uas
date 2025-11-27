@@ -48,7 +48,7 @@ class AnalyticsRemoteDataSourceImpl implements AnalyticsRemoteDataSource {
     }
 
     for (final raw in checkins) {
-      final m = raw as Map<String, dynamic>;
+      final m = Map<String, dynamic>.from(raw);
       final createdAtStr = m['created_at']?.toString();
       if (createdAtStr == null) continue;
       final createdAt = DateTime.tryParse(createdAtStr)?.toLocal();
