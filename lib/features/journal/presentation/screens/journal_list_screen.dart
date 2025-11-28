@@ -1,25 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
-import 'package:provider/provider.dart';
-
-/// Model sederhana untuk catatan mood
-class JournalEntry {
-  final String id;
-  final String? userId;
-  final int mood; // 1-5
-  final String note;
-  final DateTime createdAt;
-
-  JournalEntry({
-    required this.id,
-    required this.userId,
-    required this.mood,
-    required this.note,
-    required this.createdAt,
-  });
-}
+import '../../domain/entities/journal_entry.dart';
+import '../providers/journal_provider.dart';
 
 /// Layar daftar catatan mood
 class JournalListScreen extends StatefulWidget {
@@ -30,32 +15,15 @@ class JournalListScreen extends StatefulWidget {
 }
 
 class _JournalListScreenState extends State<JournalListScreen> {
-  final List<JournalEntry> _entries = [];
-  bool _loading = false;
-  String? _error;
-
   @override
   void initState() {
     super.initState();
-    _loadInitial();
-  }
-
-  Future<void> _loadInitial() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    try {
-      // Future integration with Supabase can be placed here.
-      // For now, we keep in-memory list. If needed, fetch entries from server.
-      await Future.delayed(const Duration(milliseconds: 300));
-    } catch (e) {
-      _error = 'Gagal memuat catatan: $e';
-    }
-
-    setState(() {
-      _loading = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = context.read<AuthProvider>();
+      final userId = auth.currentUser?.id;
+      if (userId != null) {
+        context.read<JournalProvider>().loadEntries(userId);
+      }
     });
   }
 
@@ -247,7 +215,7 @@ class _JournalListScreenState extends State<JournalListScreen> {
                       const SizedBox(height: 16),
                       CustomButton(
                         text: 'Simpan',
-                        onPressed: () {
+                        onPressed: () async {
                           final note = noteController.text.trim();
                           if (note.isEmpty) {
                             ScaffoldMessenger.of(ctx).showSnackBar(
@@ -256,20 +224,42 @@ class _JournalListScreenState extends State<JournalListScreen> {
                             return;
                           }
                           final auth = context.read<AuthProvider>();
+                          final userId = auth.currentUser?.id;
+                          if (userId == null) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              const SnackBar(content: Text('User belum login')),
+                            );
+                            return;
+                          }
+
+                          final journalProvider = context.read<JournalProvider>();
                           final entry = JournalEntry(
-                            id: DateTime.now().millisecondsSinceEpoch.toString(),
-                            userId: auth.currentUser?.id,
+                            id: '', // Biarkan Supabase generate UUID
+                            userId: userId,
                             mood: selectedMood,
                             note: note,
                             createdAt: DateTime.now(),
                           );
-                          setState(() {
-                            _entries.insert(0, entry);
-                          });
-                          Navigator.of(ctx).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Catatan mood tersimpan')),
-                          );
+
+                          final success = await journalProvider.createEntry(entry);
+                          if (ctx.mounted) {
+                            if (success) {
+                              Navigator.of(ctx).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Catatan mood tersimpan'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text(journalProvider.error ?? 'Gagal menyimpan catatan'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
                         },
                       ),
                     ],
@@ -315,83 +305,123 @@ class _JournalListScreenState extends State<JournalListScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Tambah Catatan'),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadInitial,
-        child: ListView(
-          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-          padding: const EdgeInsets.all(16),
-          children: [
-            Container(
+      body: Consumer2<AuthProvider, JournalProvider>(
+        builder: (context, auth, journalProvider, _) {
+          final userId = auth.currentUser?.id;
+          
+          return RefreshIndicator(
+            onRefresh: () async {
+              if (userId != null) {
+                await journalProvider.loadEntries(userId);
+              }
+            },
+            child: ListView(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFE1D1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: const [
-                      Icon(Icons.self_improvement, color: Color(0xFFFC4C02)),
-                      SizedBox(width: 8),
-                      Text('Refleksi Harian'),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFE1D1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.self_improvement, color: Color(0xFFFC4C02)),
+                          SizedBox(width: 8),
+                          Text('Refleksi Harian'),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Luangkan waktu sejenak untuk mengenali perasaanmu dan tuliskan hal penting dari hari ini.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Luangkan waktu sejenak untuk mengenali perasaanmu dan tuliskan hal penting dari hari ini.',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 16),
+                if (journalProvider.isLoading) _buildLoadingState(),
+                if (journalProvider.error != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            journalProvider.error!,
+                            style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 12),
                 ],
-              ),
+                if (journalProvider.entries.isEmpty && !journalProvider.isLoading)
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F4),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.edit_note, size: 48, color: Color(0xFF9CA3AF)),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Belum ada catatan mood',
+                          style: Theme.of(context).textTheme.titleLarge,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tekan tombol \'Tambah Catatan\' untuk mulai menulis.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ...journalProvider.entries.map((e) => _JournalEntryCard(
+                      entry: e,
+                      moodLabel: _moodLabel(e.mood),
+                      moodIcon: _moodIcon(e.mood),
+                      moodColor: _moodColor(context, e.mood),
+                      onDelete: () async {
+                        final success = await journalProvider.deleteEntry(e.id);
+                        if (context.mounted) {
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Catatan dihapus'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(journalProvider.error ?? 'Gagal menghapus catatan'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    )),
+              ],
             ),
-            const SizedBox(height: 16),
-            if (_loading) _buildLoadingState(),
-            if (_error != null) ...[
-              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-              const SizedBox(height: 12),
-            ],
-            if (_entries.isEmpty && !_loading)
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F4),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(Icons.edit_note, size: 48, color: Color(0xFF9CA3AF)),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Belum ada catatan mood',
-                      style: Theme.of(context).textTheme.titleLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Tekan tombol \'Tambah Catatan\' untuk mulai menulis.',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ..._entries.map((e) => _JournalEntryCard(
-                  entry: e,
-                  moodLabel: _moodLabel(e.mood),
-                  moodIcon: _moodIcon(e.mood),
-                  moodColor: _moodColor(context, e.mood),
-                  onDelete: () {
-                    setState(() {
-                      _entries.removeWhere((x) => x.id == e.id);
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Catatan dihapus')),
-                    );
-                  },
-                )),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

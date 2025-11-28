@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import 'edit_profile_screen.dart';
+import 'reminder_settings_screen.dart';
+import 'security_privacy_screen.dart';
+import 'help_center_screen.dart';
 
 /// Halaman profil dengan berbagai pengaturan dan ringkasan user.
 class ProfileScreen extends StatefulWidget {
@@ -126,7 +129,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _quickAction(
                         icon: Icons.notifications_outlined,
                         label: 'Atur Pengingat',
-                        onTap: () => _showComingSoon('Atur Pengingat'),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ReminderSettingsScreen(),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -253,13 +262,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     leading: const Icon(Icons.security_outlined),
                     title: const Text('Keamanan & Privasi'),
                     subtitle: const Text('Atur sandi, autentikasi ganda'),
-                    onTap: () => _showComingSoon('Keamanan & Privasi'),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SecurityPrivacyScreen(),
+                        ),
+                      );
+                    },
                   ),
                   ListTile(
                     leading: const Icon(Icons.help_outline),
                     title: const Text('Pusat Bantuan'),
                     subtitle: const Text('FAQ, kontak tim dukungan'),
-                    onTap: () => _showComingSoon('Pusat Bantuan'),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const HelpCenterScreen(),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   FilledButton.icon(

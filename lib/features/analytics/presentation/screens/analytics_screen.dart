@@ -24,6 +24,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     });
   }
 
+  bool _hasLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh data saat screen muncul kembali (hanya sekali per mount)
+    if (!_hasLoaded) {
+      _hasLoaded = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final auth = context.read<AuthProvider>();
+        final analytics = context.read<AnalyticsProvider>();
+        final uid = auth.currentUser?.id ?? '';
+        if (uid.isNotEmpty && mounted) {
+          analytics.load(uid);
+        }
+      });
+    }
+  }
+
   Color _usageColor(int minutes) {
     if (minutes >= 100) return Colors.redAccent;
     if (minutes >= 70) return Colors.orangeAccent;
@@ -42,7 +61,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final stats = provider.stats;
     final weekly = [...provider.weekly]..sort((a, b) => a.date.compareTo(b.date));
 
-    final totalMinutes = weekly.fold<int>(0, (sum, day) => sum + day.successCount);
+    final totalMinutes = weekly.fold<int>(0, (sum, day) => sum + day.totalMinutes);
     final averageMinutes = weekly.isEmpty ? 0 : (totalMinutes / weekly.length).round();
     final totalSessions =
         weekly.fold<int>(0, (sum, day) => sum + day.successCount + day.failedCount);
@@ -52,7 +71,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final streakDays = stats?.currentStreak ?? 0;
     final maxMinutes = weekly.isEmpty
         ? 0
-        : weekly.map((e) => e.successCount).reduce((value, element) => value > element ? value : element);
+        : weekly.map((e) => e.totalMinutes).reduce((value, element) => value > element ? value : element);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Social Detox')),
@@ -194,7 +213,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             )
                           else
                             ...weekly.map((day) {
-                              final minutes = day.successCount;
+                              final minutes = day.totalMinutes;
                               final barColor = _usageColor(minutes);
                               final progress = maxMinutes == 0 ? 0.0 : minutes / maxMinutes;
                               return Padding(
@@ -228,7 +247,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     SizedBox(
                                       width: 60,
                                       child: Text(
-                                        '${minutes}m',
+                                        '${day.totalMinutes}m',
                                         textAlign: TextAlign.right,
                                         style: Theme.of(context).textTheme.bodyMedium,
                                       ),

@@ -5,6 +5,7 @@ import '../../presentation/providers/challenge_provider.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../reward/presentation/providers/reward_provider.dart';
 import '../../../reward/presentation/widgets/achievement_unlock_dialog.dart';
+import '../../../analytics/presentation/providers/analytics_provider.dart';
 import 'social_media_challenge_panel.dart';
 
 /// Active Challenge Card Widget
@@ -298,9 +299,20 @@ class ActiveChallengeCard extends StatelessWidget {
                 onPressed: (isLoading || hasCheckedToday)
                     ? null
                     : () async {
+                        // Show dialog untuk input waktu
+                        final durationMinutes = await showDialog<int>(
+                          context: context,
+                          builder: (context) => const _DurationInputDialog(),
+                        );
+                        
+                        if (durationMinutes == null) return;
+                        
                         final p = context.read<ChallengeProvider>();
                         final res = await p.checkIn(
-                            userChallengeId: userChallenge.id, isSuccess: true);
+                          userChallengeId: userChallenge.id,
+                          isSuccess: true,
+                          durationMinutes: durationMinutes,
+                        );
                         if (res == null) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -315,6 +327,15 @@ class ActiveChallengeCard extends StatelessWidget {
                               longestStreak: res.longestStreak,
                               totalPoints: res.totalPoints,
                             );
+                        
+                        // Refresh Analytics untuk update data waktu realtime
+                        final analyticsProvider = context.read<AnalyticsProvider>();
+                        final auth = context.read<AuthProvider>();
+                        final uid = auth.currentUser?.id;
+                        if (uid != null && context.mounted) {
+                          await analyticsProvider.load(uid);
+                        }
+                        
                         // Check and award achievements after a check-in or completion
                         final rewards = await context
                             .read<RewardProvider>()
@@ -380,6 +401,85 @@ class ActiveChallengeCard extends StatelessWidget {
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Dialog untuk input durasi aktivitas dalam menit
+class _DurationInputDialog extends StatefulWidget {
+  const _DurationInputDialog();
+
+  @override
+  State<_DurationInputDialog> createState() => _DurationInputDialogState();
+}
+
+class _DurationInputDialogState extends State<_DurationInputDialog> {
+  final _controller = TextEditingController();
+  int _selectedMinutes = 15;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Berapa lama aktivitas?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Masukkan durasi aktivitas dalam menit'),
+          const SizedBox(height: 16),
+          // Quick select buttons
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [15, 30, 45, 60, 90, 120].map((minutes) {
+              final isSelected = _selectedMinutes == minutes;
+              return ChoiceChip(
+                label: Text('${minutes}m'),
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (selected) {
+                    setState(() {
+                      _selectedMinutes = minutes;
+                      _controller.text = minutes.toString();
+                    });
+                  }
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Durasi (menit)',
+              hintText: 'Masukkan durasi',
+              prefixIcon: Icon(Icons.timer_outlined),
+            ),
+            onChanged: (value) {
+              final minutes = int.tryParse(value);
+              if (minutes != null && minutes > 0) {
+                setState(() => _selectedMinutes = minutes);
+              }
+            },
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Batal'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _selectedMinutes),
+          child: const Text('Simpan'),
         ),
       ],
     );

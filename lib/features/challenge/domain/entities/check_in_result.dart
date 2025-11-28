@@ -14,6 +14,9 @@ class CheckInResult {
   final int currentStreak;
   final int longestStreak;
   final int totalPoints;
+  
+  /// Duration in minutes spent on the activity
+  final int durationMinutes;
 
   const CheckInResult({
     required this.userChallengeId,
@@ -27,5 +30,6 @@ class CheckInResult {
     required this.currentStreak,
     required this.longestStreak,
     required this.totalPoints,
+    this.durationMinutes = 0,
   });
 }

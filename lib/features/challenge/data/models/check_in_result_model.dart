@@ -13,6 +13,7 @@ class CheckInResultModel extends CheckInResult {
     required super.currentStreak,
     required super.longestStreak,
     required super.totalPoints,
+    super.durationMinutes,
   });
 
   factory CheckInResultModel.fromJson(Map<String, dynamic> json) {
@@ -33,6 +34,7 @@ class CheckInResultModel extends CheckInResult {
       currentStreak: (json['current_streak'] as num?)?.toInt() ?? 0,
       longestStreak: (json['longest_streak'] as num?)?.toInt() ?? 0,
       totalPoints: (json['total_points'] as num?)?.toInt() ?? 0,
+      durationMinutes: (json['duration_minutes'] as num?)?.toInt() ?? 0,
     );
   }
 }

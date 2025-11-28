@@ -37,6 +37,7 @@ abstract class ChallengeRemoteDatasource {
     required String userChallengeId,
     required bool isSuccess,
     DateTime? checkInDate,
+    int durationMinutes = 0,
   });
 }
 
@@ -123,6 +124,7 @@ class ChallengeRemoteDatasourceImpl implements ChallengeRemoteDatasource {
     required String userChallengeId,
     required bool isSuccess,
     DateTime? checkInDate,
+    int durationMinutes = 0,
   }) async {
     try {
       final res = await SupabaseConfig.client.rpc(
@@ -131,6 +133,7 @@ class ChallengeRemoteDatasourceImpl implements ChallengeRemoteDatasource {
           'p_user_challenge_id': userChallengeId,
           'p_is_success': isSuccess,
           if (checkInDate != null) 'p_checkin_date': checkInDate.toIso8601String().substring(0, 10),
+          'p_duration_minutes': durationMinutes,
         },
       );
       final data = (res as Map<String, dynamic>);

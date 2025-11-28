@@ -100,6 +100,7 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
     required String userChallengeId,
     required bool isSuccess,
     DateTime? checkInDate,
+    int durationMinutes = 0,
   }) async {
     try {
       /// Memanggil remote datasource untuk check-in
@@ -107,6 +108,7 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
         userChallengeId: userChallengeId,
         isSuccess: isSuccess,
         checkInDate: checkInDate,
+        durationMinutes: durationMinutes,
       );
 
       /// Jika berhasil, return Right dengan CheckInResult

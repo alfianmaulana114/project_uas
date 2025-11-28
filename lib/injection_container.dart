@@ -30,6 +30,13 @@ import 'features/analytics/domain/repositories/analytics_repository.dart';
 import 'features/analytics/domain/usecases/get_user_stats_usecase.dart';
 import 'features/analytics/domain/usecases/get_weekly_checkins_usecase.dart';
 import 'features/analytics/presentation/providers/analytics_provider.dart';
+import 'features/journal/data/datasources/journal_remote_datasource.dart';
+import 'features/journal/data/repositories/journal_repository_impl.dart';
+import 'features/journal/domain/repositories/journal_repository.dart';
+import 'features/journal/domain/usecases/create_entry_usecase.dart';
+import 'features/journal/domain/usecases/get_all_entries_usecase.dart';
+import 'features/journal/domain/usecases/delete_entry_usecase.dart';
+import 'features/journal/presentation/providers/journal_provider.dart';
 
 /// Service Locator menggunakan GetIt
 /// Mengikuti konsep Dependency Injection (SOLID - Dependency Inversion Principle)
@@ -62,6 +69,11 @@ Future<void> init() async {
     () => AnalyticsRemoteDataSourceImpl(),
   );
 
+  /// Journal Remote Datasource
+  sl.registerLazySingleton<JournalRemoteDatasource>(
+    () => JournalRemoteDatasourceImpl(),
+  );
+
   // ============ Repositories ============
   /// Register AuthRepository dengan implementasinya
   /// Menggunakan AuthRemoteDatasource yang sudah di-register sebelumnya
@@ -89,6 +101,13 @@ Future<void> init() async {
   sl.registerLazySingleton<AnalyticsRepository>(
     () => AnalyticsRepositoryImpl(
       sl<AnalyticsRemoteDataSource>(),
+    ),
+  );
+
+  /// Journal Repository
+  sl.registerLazySingleton<JournalRepository>(
+    () => JournalRepositoryImpl(
+      sl<JournalRemoteDatasource>(),
     ),
   );
 
@@ -159,6 +178,17 @@ Future<void> init() async {
     () => GetWeeklyCheckInsUsecase(sl<AnalyticsRepository>()),
   );
 
+  /// Journal Use Cases
+  sl.registerLazySingleton(
+    () => CreateEntryUsecase(sl<JournalRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetAllEntriesUsecase(sl<JournalRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => DeleteEntryUsecase(sl<JournalRepository>()),
+  );
+
   // ============ Providers ============
   /// Register AuthProvider sebagai factory
   /// Factory berarti setiap kali dipanggil akan membuat instance baru
@@ -199,6 +229,15 @@ Future<void> init() async {
     () => AnalyticsProvider(
       getUserStatsUsecase: sl<GetUserStatsUsecase>(),
       getWeeklyCheckInsUsecase: sl<GetWeeklyCheckInsUsecase>(),
+    ),
+  );
+
+  /// Journal Provider
+  sl.registerFactory(
+    () => JournalProvider(
+      createEntryUsecase: sl<CreateEntryUsecase>(),
+      getAllEntriesUsecase: sl<GetAllEntriesUsecase>(),
+      deleteEntryUsecase: sl<DeleteEntryUsecase>(),
     ),
   );
 }

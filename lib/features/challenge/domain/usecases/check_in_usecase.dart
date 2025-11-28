@@ -11,11 +11,13 @@ class CheckInUsecase {
     required String userChallengeId,
     required bool isSuccess,
     DateTime? checkInDate,
+    int durationMinutes = 0,
   }) {
     return repository.checkIn(
       userChallengeId: userChallengeId,
       isSuccess: isSuccess,
       checkInDate: checkInDate,
+      durationMinutes: durationMinutes,
     );
   }
 }

@@ -199,6 +199,7 @@ class ChallengeProvider extends ChangeNotifier {
     required String userChallengeId,
     required bool isSuccess,
     DateTime? checkInDate,
+    int durationMinutes = 0,
   }) async {
     _loading = true;
     _error = null;
@@ -217,6 +218,7 @@ class ChallengeProvider extends ChangeNotifier {
       userChallengeId: userChallengeId,
       isSuccess: isSuccess,
       checkInDate: checkInDate,
+      durationMinutes: durationMinutes,
     );
 
     final result = res.fold<CheckInResult?>(

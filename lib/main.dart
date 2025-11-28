@@ -8,6 +8,7 @@ import 'features/authentication/presentation/providers/auth_provider.dart';
 import 'features/challenge/presentation/providers/challenge_provider.dart';
 import 'features/reward/presentation/providers/reward_provider.dart';
 import 'features/analytics/presentation/providers/analytics_provider.dart';
+import 'features/journal/presentation/providers/journal_provider.dart';
 
 /// Main entry point aplikasi
 /// Mengikuti konsep Single Responsibility Principle
@@ -67,6 +68,10 @@ class MyApp extends StatelessWidget {
         /// AnalyticsProvider untuk fitur Analytics
         ChangeNotifierProvider(
           create: (_) => di.sl<AnalyticsProvider>(),
+        ),
+        /// JournalProvider untuk fitur Catatan Mood
+        ChangeNotifierProvider(
+          create: (_) => di.sl<JournalProvider>(),
         ),
       ],
       child: MaterialApp(

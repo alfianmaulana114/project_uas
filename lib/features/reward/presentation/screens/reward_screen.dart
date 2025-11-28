@@ -127,12 +127,48 @@ class _RewardScreenState extends State<RewardScreen> {
         ? _mockRewards
         : _mockRewards.where((r) => r.category == _selectedCategory).toList();
 
+    // Cek apakah screen ini dibuka via Navigator.push (dari Home) atau sebagai tab
+    final canPop = Navigator.canPop(context);
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
+      appBar: canPop
+          ? AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Material(
+                  color: Colors.white.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(12),
+                  elevation: 2,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.4),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : null,
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-            child: _buildHeader(context, user),
+            child: _buildHeader(context, user, canPop),
           ),
           SliverToBoxAdapter(
             child: _buildPointsCard(context, userPoints),
@@ -254,77 +290,101 @@ class _RewardScreenState extends State<RewardScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, user) {
+  Widget _buildHeader(BuildContext context, user, bool hasAppBar) {
     final streak = user?.currentStreak ?? 0;
 
     return Container(
+      height: 180,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.8),
-          ],
+        image: DecorationImage(
+          image: AssetImage('assets/images/digital_reward_header.png'),
+          fit: BoxFit.cover,
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Social Detox',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Kontrol sosial media Anda',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.local_fire_department,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$streak hari',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+      child: Container(
+        decoration: BoxDecoration(
+          // Overlay gelap untuk memastikan teks terlihat
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.3),
+              Colors.black.withOpacity(0.1),
             ],
           ),
-        ],
+        ),
+        padding: EdgeInsets.fromLTRB(20, hasAppBar ? 20 : 60, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Social Detox',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              offset: const Offset(0, 2),
+                              blurRadius: 4,
+                              color: Colors.black.withOpacity(0.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Kontrol sosial media Anda',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withOpacity(0.95),
+                          shadows: [
+                            Shadow(
+                              offset: const Offset(0, 1),
+                              blurRadius: 3,
+                              color: Colors.black.withOpacity(0.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.local_fire_department,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$streak hari',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -426,37 +486,37 @@ class _RewardScreenState extends State<RewardScreen> {
   }
 
   Widget _buildCategoryFilter(BuildContext context) {
+    final categories = [
+      {'label': 'Semua', 'value': 'semua', 'icon': Icons.apps},
+      {'label': 'Voucher', 'value': 'voucher', 'icon': Icons.receipt_long},
+      {'label': 'Hadiah', 'value': 'hadiah', 'icon': Icons.card_giftcard},
+    ];
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: _CategoryChip(
-              label: 'Semua',
-              icon: Icons.apps,
-              isSelected: _selectedCategory == 'semua',
-              onTap: () => setState(() => _selectedCategory = 'semua'),
+      height: 60,
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: categories.length,
+        itemBuilder: (context, index) {
+          final category = categories[index];
+          final isSelected = _selectedCategory == category['value'];
+          return Padding(
+            padding: EdgeInsets.only(
+              right: index < categories.length - 1 ? 12 : 0,
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
             child: _CategoryChip(
-              label: 'Voucher',
-              icon: Icons.receipt_long,
-              isSelected: _selectedCategory == 'voucher',
-              onTap: () => setState(() => _selectedCategory = 'voucher'),
+              label: category['label'] as String,
+              icon: category['icon'] as IconData,
+              isSelected: isSelected,
+              onTap: () => setState(() => _selectedCategory = category['value'] as String),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _CategoryChip(
-              label: 'Hadiah',
-              icon: Icons.card_giftcard,
-              isSelected: _selectedCategory == 'hadiah',
-              onTap: () => setState(() => _selectedCategory = 'hadiah'),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -532,6 +592,7 @@ class _CategoryChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        constraints: const BoxConstraints(minWidth: 100),
         decoration: BoxDecoration(
           color: isSelected
               ? Theme.of(context).colorScheme.primary
@@ -545,6 +606,7 @@ class _CategoryChip extends StatelessWidget {
           ),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(

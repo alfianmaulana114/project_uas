@@ -45,75 +45,99 @@ class _ChallengeListScreenState extends State<ChallengeListScreen> {
     final user = auth.currentUser;
     
     return Container(
+      height: 180,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.8),
-          ],
+        image: DecorationImage(
+          image: AssetImage('assets/images/digital_detox_header.png'),
+          fit: BoxFit.cover,
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Challenge',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+      child: Container(
+        decoration: BoxDecoration(
+          // Overlay gelap untuk memastikan teks terlihat
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.3),
+              Colors.black.withOpacity(0.1),
+            ],
           ),
-          const SizedBox(height: 8),
-          if (user != null)
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 60, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
-              'Halo, ${user.fullName ?? user.username}!',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.white.withOpacity(0.9),
+              'Challenge',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                shadows: [
+                  Shadow(
+                    offset: const Offset(0, 2),
+                    blurRadius: 4,
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                ],
               ),
             ),
-        ],
+            const SizedBox(height: 8),
+            if (user != null)
+              Text(
+                'Halo, ${user.fullName ?? user.username}!',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Colors.white.withOpacity(0.95),
+                  shadows: [
+                    Shadow(
+                      offset: const Offset(0, 1),
+                      blurRadius: 3,
+                      color: Colors.black.withOpacity(0.5),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCategoryFilter(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+    return SizedBox(
       height: 60,
-      child: ListView.builder(
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         itemCount: _categories.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final category = _categories[index];
           final selected = _selected == category['value'];
-          return Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: FilterChip(
-              avatar: Icon(
-                category['icon'],
-                size: 18,
-                color: selected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              label: Text(category['label']),
-              selected: selected,
-              onSelected: (_) {
-                setState(() => _selected = category['value']);
-                context.read<ChallengeProvider>().load(category: _selected);
-              },
-              selectedColor: Theme.of(context).colorScheme.primaryContainer,
-              checkmarkColor: Theme.of(context).colorScheme.primary,
-              labelStyle: TextStyle(
-                color: selected
-                    ? Theme.of(context).colorScheme.onPrimaryContainer
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-              ),
+          return FilterChip(
+            avatar: Icon(
+              category['icon'],
+              size: 18,
+              color: selected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            label: Text(category['label']),
+            selected: selected,
+            onSelected: (_) {
+              setState(() => _selected = category['value']);
+              context.read<ChallengeProvider>().load(category: _selected);
+            },
+            selectedColor: Theme.of(context).colorScheme.primaryContainer,
+            checkmarkColor: Theme.of(context).colorScheme.primary,
+            labelStyle: TextStyle(
+              color: selected
+                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
             ),
           );
         },
