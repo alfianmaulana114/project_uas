@@ -38,19 +38,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String label,
     required VoidCallback onTap,
   }) {
+    const double h = 42;
     return Expanded(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
         child: FilledButton.tonalIcon(
-          icon: Icon(icon),
+          icon: Icon(icon, size: 20),
           label: Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
           onPressed: onTap,
           style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+            minimumSize: Size.fromHeight(h),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),

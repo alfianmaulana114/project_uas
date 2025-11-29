@@ -394,10 +394,8 @@ class ProgressSummaryWidget extends StatelessWidget {
                                             return;
                                           }
                                           
-                                          // Update user stats in AuthProvider
+                                          // Update poin saja; streak mengikuti tanggal riil
                                           context.read<AuthProvider>().applyStatsUpdate(
-                                                currentStreak: res.currentStreak,
-                                                longestStreak: res.longestStreak,
                                                 totalPoints: res.totalPoints,
                                               );
                                           

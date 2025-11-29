@@ -13,7 +13,7 @@ import 'package:project_uas/core/errors/failures.dart';
 
 class _DummyRepo implements ChallengeRepository {
   @override
-  Future<Either<Failure, CheckInResult>> checkIn({required String userChallengeId, required bool isSuccess, DateTime? checkInDate}) async {
+  Future<Either<Failure, CheckInResult>> checkIn({required String userChallengeId, required bool isSuccess, DateTime? checkInDate, int durationMinutes = 0}) async {
     throw UnimplementedError();
   }
 
@@ -61,6 +61,7 @@ class _StubCheckIn extends CheckInUsecase {
     required String userChallengeId,
     required bool isSuccess,
     DateTime? checkInDate,
+    int durationMinutes = 0,
   }) async {
     if (error != null) return Left(error!);
     return Right(result);

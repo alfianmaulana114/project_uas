@@ -236,6 +236,18 @@ class ChallengeProvider extends ChangeNotifier {
 
       // Replace updated challenge in active list or remove if completed
       final updated = _active[idx];
+      int computedCurrentDay;
+      {
+        final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+        final start = DateTime(updated.startDate.year, updated.startDate.month, updated.startDate.day);
+        final base = today.difference(start).inDays + 1;
+        if (updated.endDate != null) {
+          final total = updated.endDate!.difference(updated.startDate).inDays + 1;
+          computedCurrentDay = base.clamp(1, total);
+        } else {
+          computedCurrentDay = base.clamp(1, 3650);
+        }
+      }
       final updatedChallenge = UserChallenge(
         id: updated.id,
         userId: updated.userId,
@@ -244,7 +256,7 @@ class ChallengeProvider extends ChangeNotifier {
         startDate: updated.startDate,
         endDate: updated.endDate,
         status: result.status,
-        currentDay: result.currentDay,
+        currentDay: computedCurrentDay,
         successDays: result.successDays,
         pointsEarned: updated.pointsEarned + result.pointsAwarded,
         bookName: updated.bookName,
