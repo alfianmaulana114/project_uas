@@ -59,6 +59,8 @@ declare
   v_completed boolean := false;
   v_total_days int := 0;
   v_reward int := 0;
+  v_today date;
+  v_computed_current_day int;
 begin
   -- Validate challenge exists and is active (fetch challenge row only)
   select *
@@ -88,16 +90,29 @@ begin
   -- Update challenge progress
   -- Calculate total days based on start/end
   v_total_days := greatest(1, (v_uc.end_date - v_uc.start_date + 1));
+  
+  -- Calculate current_day based on real-time date difference, not increment
+  -- current_day should only increase when a new day arrives (at midnight), not when check-in
+  -- Calculate: days between start_date and today (inclusive) = (today - start_date) + 1
+  v_today := current_date;
+  v_computed_current_day := greatest(1, (v_today - v_uc.start_date) + 1);
+  -- Clamp to total_days if challenge has end_date
+  if v_uc.end_date is not null then
+    v_computed_current_day := least(v_computed_current_day, v_total_days);
+  end if;
 
   update public.user_challenges
-     set current_day = v_uc.current_day + 1,
+     set current_day = v_computed_current_day,
          success_days = v_uc.success_days + case when p_is_success then 1 else 0 end,
-         status = case when (v_uc.current_day + 1) >= v_total_days then 'completed' else v_uc.status end,
-         completed_at = case when (v_uc.current_day + 1) >= v_total_days then now() else v_uc.completed_at end
+         status = case when v_computed_current_day >= v_total_days then 'completed' else v_uc.status end,
+         completed_at = case when v_computed_current_day >= v_total_days then now() else v_uc.completed_at end
    where id = p_user_challenge_id
    returning * into v_uc;
 
   -- Update streaks (use v_user fields)
+  -- Karena double check-in per day sudah dicegah di atas, setiap check-in yang sampai di sini
+  -- adalah check-in pertama hari ini. Jadi streak hanya bertambah sekali per hari.
+  -- Streak bertambah jika berhasil, reset ke 0 jika gagal
   update public.users
      set current_streak = case when p_is_success then coalesce(v_user.current_streak, 0) + 1 else 0 end,
          longest_streak = greatest(

@@ -299,7 +299,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 SnackBar(content: Text(auth.error ?? 'Gagal logout')),
                               );
                             } else if (context.mounted) {
-                              Navigator.of(context).popUntil((route) => route.isFirst);
+                              // Kembali ke login screen dan hapus semua route sebelumnya
+                              Navigator.of(context).pushNamedAndRemoveUntil(
+                                '/login',
+                                (route) => false,
+                              );
                             }
                           },
                   ),

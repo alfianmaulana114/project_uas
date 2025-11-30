@@ -26,6 +26,8 @@ DECLARE
   v_completed boolean := false;
   v_total_days int := 0;
   v_reward int := 0;
+  v_today date;
+  v_computed_current_day int;
 BEGIN
   -- Validate challenge exists and is active (fetch challenge row only)
   SELECT *
@@ -55,16 +57,29 @@ BEGIN
   -- Update challenge progress
   -- Calculate total days based on start/end
   v_total_days := GREATEST(1, (v_uc.end_date - v_uc.start_date + 1));
-
+  
+  -- Calculate current_day based on real-time date difference, not increment
+  -- current_day should only increase when a new day arrives (at midnight), not when check-in
+  -- Calculate: days between start_date and today (inclusive) = (today - start_date) + 1
+  v_today := CURRENT_DATE;
+  v_computed_current_day := GREATEST(1, (v_today - v_uc.start_date) + 1);
+  -- Clamp to total_days if challenge has end_date
+  IF v_uc.end_date IS NOT NULL THEN
+    v_computed_current_day := LEAST(v_computed_current_day, v_total_days);
+  END IF;
+  
   UPDATE public.user_challenges
-     SET current_day = v_uc.current_day + 1,
+     SET current_day = v_computed_current_day,
          success_days = v_uc.success_days + CASE WHEN p_is_success THEN 1 ELSE 0 END,
-         status = CASE WHEN (v_uc.current_day + 1) >= v_total_days THEN 'completed' ELSE v_uc.status END,
-         completed_at = CASE WHEN (v_uc.current_day + 1) >= v_total_days THEN NOW() ELSE v_uc.completed_at END
+         status = CASE WHEN v_computed_current_day >= v_total_days THEN 'completed' ELSE v_uc.status END,
+         completed_at = CASE WHEN v_computed_current_day >= v_total_days THEN NOW() ELSE v_uc.completed_at END
    WHERE id = p_user_challenge_id
    RETURNING * INTO v_uc;
 
   -- Update streaks (use v_user fields)
+  -- Karena double check-in per day sudah dicegah di atas, setiap check-in yang sampai di sini
+  -- adalah check-in pertama hari ini. Jadi streak hanya bertambah sekali per hari.
+  -- Streak bertambah jika berhasil, reset ke 0 jika gagal
   UPDATE public.users
      SET current_streak = CASE WHEN p_is_success THEN COALESCE(v_user.current_streak, 0) + 1 ELSE 0 END,
          longest_streak = GREATEST(

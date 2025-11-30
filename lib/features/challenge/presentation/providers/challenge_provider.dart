@@ -78,6 +78,21 @@ class ChallengeProvider extends ChangeNotifier {
     return d.year == now.year && d.month == now.month && d.day == now.day;
   }
 
+  /// Calculate currentDay based on real-time date difference
+  /// currentDay should only increase when a new day arrives (at midnight), not when check-in
+  /// Returns: days between startDate and today (inclusive) = (today - startDate) + 1
+  int _calculateCurrentDay(DateTime startDate, DateTime? endDate) {
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final base = today.difference(start).inDays + 1;
+    if (endDate != null) {
+      final total = endDate.difference(startDate).inDays + 1;
+      return base.clamp(1, total);
+    } else {
+      return base.clamp(1, 3650);
+    }
+  }
+
   void _rolloverIfNewDay() {
     final nowMidnight = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
     if (nowMidnight.isAfter(_lastMidnight)) {
@@ -126,9 +141,31 @@ class ChallengeProvider extends ChangeNotifier {
       },
       /// Jika berhasil (Right = List<UserChallenge>)
       (active) {
-        _active
-          ..clear()
-          ..addAll(active);
+        _active.clear();
+        // Recalculate currentDay based on real-time date difference
+        // This ensures currentDay is always correct, regardless of database value
+        for (final challenge in active) {
+          final computedCurrentDay = _calculateCurrentDay(challenge.startDate, challenge.endDate);
+          
+          // Create updated challenge with correct currentDay
+          final updatedChallenge = UserChallenge(
+            id: challenge.id,
+            userId: challenge.userId,
+            challengeId: challenge.challengeId,
+            category: challenge.category,
+            startDate: challenge.startDate,
+            endDate: challenge.endDate,
+            status: challenge.status,
+            currentDay: computedCurrentDay,
+            successDays: challenge.successDays,
+            pointsEarned: challenge.pointsEarned,
+            bookName: challenge.bookName,
+            eventName: challenge.eventName,
+            completedAt: challenge.completedAt,
+            createdAt: challenge.createdAt,
+          );
+          _active.add(updatedChallenge);
+        }
       },
     );
 
@@ -236,18 +273,8 @@ class ChallengeProvider extends ChangeNotifier {
 
       // Replace updated challenge in active list or remove if completed
       final updated = _active[idx];
-      int computedCurrentDay;
-      {
-        final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-        final start = DateTime(updated.startDate.year, updated.startDate.month, updated.startDate.day);
-        final base = today.difference(start).inDays + 1;
-        if (updated.endDate != null) {
-          final total = updated.endDate!.difference(updated.startDate).inDays + 1;
-          computedCurrentDay = base.clamp(1, total);
-        } else {
-          computedCurrentDay = base.clamp(1, 3650);
-        }
-      }
+      // Calculate currentDay based on real-time date difference, not from database
+      final computedCurrentDay = _calculateCurrentDay(updated.startDate, updated.endDate);
       final updatedChallenge = UserChallenge(
         id: updated.id,
         userId: updated.userId,
