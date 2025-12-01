@@ -28,7 +28,6 @@ DECLARE
   v_reward int := 0;
   v_today date;
   v_computed_current_day int;
-  v_already_checked_in_today boolean := false;
 BEGIN
   -- Validate challenge exists and is active (fetch challenge row only)
   SELECT *
@@ -78,30 +77,17 @@ BEGIN
    RETURNING * INTO v_uc;
 
   -- Update streaks (use v_user fields)
-  -- PENTING: Streak hanya bertambah sekali per hari, terlepas dari berapa banyak challenge yang di-check-in
-  -- Cek apakah user sudah check-in hari ini untuk challenge lain
-  -- Jika sudah check-in hari ini, jangan update streak lagi (hanya update challenge progress)
-  -- Jika belum check-in hari ini, update streak (bertambah jika berhasil, reset ke 0 jika gagal)
-  -- Catatan: check-in saat ini sudah di-insert di atas, jadi kita cek check-in lain (bukan yang ini)
-  SELECT EXISTS(
-    SELECT 1 FROM public.checkins c
-    INNER JOIN public.user_challenges uc ON c.user_challenge_id = uc.id
-    WHERE uc.user_id = v_user.id
-      AND c.checkin_date = p_checkin_date
-      AND c.user_challenge_id != p_user_challenge_id
-  ) INTO v_already_checked_in_today;
-  
-  -- Hanya update streak jika ini adalah check-in pertama hari ini untuk user ini
-  IF NOT v_already_checked_in_today THEN
-    UPDATE public.users
-       SET current_streak = CASE WHEN p_is_success THEN COALESCE(v_user.current_streak, 0) + 1 ELSE 0 END,
-           longest_streak = GREATEST(
-              CASE WHEN p_is_success THEN COALESCE(v_user.current_streak, 0) + 1 ELSE 0 END,
-              COALESCE(v_user.longest_streak, 0)
-           )
-     WHERE id = v_user.id
-     RETURNING * INTO v_user;
-  END IF;
+  -- Karena double check-in per day sudah dicegah di atas, setiap check-in yang sampai di sini
+  -- adalah check-in pertama hari ini. Jadi streak hanya bertambah sekali per hari.
+  -- Streak bertambah jika berhasil, reset ke 0 jika gagal
+  UPDATE public.users
+     SET current_streak = CASE WHEN p_is_success THEN COALESCE(v_user.current_streak, 0) + 1 ELSE 0 END,
+         longest_streak = GREATEST(
+            CASE WHEN p_is_success THEN COALESCE(v_user.current_streak, 0) + 1 ELSE 0 END,
+            COALESCE(v_user.longest_streak, 0)
+         )
+   WHERE id = v_user.id
+   RETURNING * INTO v_user;
 
   -- Check completion and award points from master challenge
   IF v_uc.status = 'completed' THEN

@@ -301,83 +301,6 @@ class _RewardScreenState extends State<RewardScreen> {
     );
   }
 
-  Future<void> _handleAddPoints(BuildContext context) async {
-    final rewardProvider = context.read<RewardProvider>();
-    
-    // Dialog untuk input jumlah poin
-    final pointsController = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tambah Poin'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Masukkan jumlah poin yang ingin ditambahkan:'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: pointsController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Jumlah Poin',
-                hintText: 'Contoh: 1000',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (pointsController.text.isNotEmpty) {
-                Navigator.pop(context, true);
-              }
-            },
-            child: const Text('Tambah'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    final points = int.tryParse(pointsController.text);
-    if (points == null || points <= 0) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Masukkan jumlah poin yang valid (lebih dari 0)'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-      return;
-    }
-
-    final result = await rewardProvider.addPoints(points);
-    if (!context.mounted) return;
-
-    if (result != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Berhasil menambahkan $points poin! Total poin sekarang: ${result['new_points']}'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(rewardProvider.error ?? 'Gagal menambahkan poin'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-    }
-  }
-
   Widget _buildPointsCard(BuildContext context, int userPoints) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -433,17 +356,6 @@ class _RewardScreenState extends State<RewardScreen> {
                         size: 32,
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: () => _handleAddPoints(context),
-                    icon: const Icon(Icons.add_circle_outline, size: 20),
-                    label: const Text('Tambah Poin'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Theme.of(context).colorScheme.primary,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    ),
                   ),
                 ],
               ),
@@ -677,6 +589,34 @@ class _RewardCard extends StatelessWidget {
         return Icons.battery_charging_full;
       case 'shopping_bag':
         return Icons.shopping_bag;
+      case 'account_balance_wallet':
+        return Icons.account_balance_wallet;
+      case 'water_drop':
+        return Icons.water_drop;
+      case 'local_cafe':
+        return Icons.local_cafe;
+      case 'directions_car':
+        return Icons.directions_car;
+      case 'phone_android':
+        return Icons.phone_android;
+      case 'flight':
+        return Icons.flight;
+      case 'movie':
+        return Icons.movie;
+      case 'mouse':
+        return Icons.mouse;
+      case 'keyboard':
+        return Icons.keyboard;
+      case 'videocam':
+        return Icons.videocam;
+      case 'speaker':
+        return Icons.speaker;
+      case 'laptop':
+        return Icons.laptop;
+      case 'monitor':
+        return Icons.monitor;
+      case 'chair':
+        return Icons.chair;
       default:
         return Icons.card_giftcard;
     }

@@ -264,13 +264,32 @@ $$;
 -- Seed data: contoh reward items
 INSERT INTO public.reward_items (name, description, category, points_required, stock, icon)
 VALUES
-  ('Voucher Starbucks Rp 50.000', 'Voucher belanja di Starbucks senilai Rp 50.000', 'voucher', 500, 10, 'local_cafe'),
-  ('Voucher Grab Food Rp 25.000', 'Voucher untuk pesan makanan via Grab Food', 'voucher', 250, 20, 'restaurant'),
-  ('Voucher Tokopedia Rp 100.000', 'Voucher belanja online di Tokopedia', 'voucher', 1000, 5, 'shopping_bag'),
-  ('Voucher Gojek Rp 30.000', 'Voucher untuk layanan Gojek', 'voucher', 300, 15, 'directions_car'),
+  -- Voucher (Poin Rendah - Menengah)
   ('E-Wallet OVO Rp 20.000', 'Saldo OVO senilai Rp 20.000', 'voucher', 200, 30, 'account_balance_wallet'),
+  ('Pulsa Rp 25.000', 'Pulsa untuk semua operator', 'voucher', 250, 25, 'phone_android'),
+  ('Voucher Grab Food Rp 30.000', 'Voucher untuk pesan makanan via Grab Food', 'voucher', 300, 20, 'restaurant'),
+  ('Voucher Gojek Rp 50.000', 'Voucher untuk layanan Gojek', 'voucher', 500, 15, 'directions_car'),
+  ('Voucher Starbucks Rp 50.000', 'Voucher belanja di Starbucks senilai Rp 50.000', 'voucher', 500, 10, 'local_cafe'),
+  ('E-Wallet DANA Rp 50.000', 'Saldo DANA senilai Rp 50.000', 'voucher', 500, 20, 'account_balance_wallet'),
   ('Voucher Shopee Rp 75.000', 'Voucher belanja di Shopee', 'voucher', 750, 8, 'shopping_cart'),
-  ('Pulsa Rp 25.000', 'Pulsa untuk semua operator', 'voucher', 250, 25, 'phone_android')
+  ('Voucher Tokopedia Rp 100.000', 'Voucher belanja online di Tokopedia', 'voucher', 1000, 5, 'shopping_bag'),
+  ('Voucher Traveloka Rp 150.000', 'Voucher untuk booking hotel dan tiket pesawat', 'voucher', 1500, 5, 'flight'),
+  ('Voucher Netflix 1 Bulan', 'Voucher langganan Netflix Premium selama 1 bulan', 'voucher', 2000, 3, 'movie'),
+  ('Voucher Spotify Premium 3 Bulan', 'Voucher langganan Spotify Premium selama 3 bulan', 'voucher', 2500, 3, 'headphones'),
+  
+  -- Hadiah Fisik (Poin Menengah - Tinggi)
+  ('Tumbler Stainless Steel', 'Tumbler stainless steel berkualitas tinggi dengan desain modern', 'hadiah', 500, 15, 'water_drop'),
+  ('Power Bank 10000mAh', 'Power bank portable dengan kapasitas 10000mAh, fast charging', 'hadiah', 800, 12, 'battery_charging_full'),
+  ('Mouse Wireless', 'Mouse wireless ergonomis dengan sensor presisi tinggi', 'hadiah', 1000, 10, 'mouse'),
+  ('Keyboard Mechanical RGB', 'Keyboard mechanical dengan backlight RGB dan switch berkualitas', 'hadiah', 1500, 8, 'keyboard'),
+  ('Headphone Bluetooth', 'Headphone wireless dengan noise cancellation dan kualitas suara premium', 'hadiah', 2000, 6, 'headphones'),
+  ('Smart Watch', 'Smartwatch dengan fitur fitness tracking, heart rate monitor, dan notifikasi', 'hadiah', 3000, 5, 'watch'),
+  ('Webcam HD 1080p', 'Webcam HD dengan auto-focus dan microphone built-in untuk meeting online', 'hadiah', 2500, 7, 'videocam'),
+  ('Speaker Bluetooth Portable', 'Speaker Bluetooth dengan bass boost dan waterproof IPX7', 'hadiah', 1800, 8, 'speaker'),
+  ('Laptop Stand Aluminium', 'Laptop stand ergonomis dari aluminium untuk meningkatkan produktivitas', 'hadiah', 1200, 10, 'laptop'),
+  ('Mechanical Keyboard Premium', 'Keyboard mechanical premium dengan keycaps PBT dan switch Cherry MX', 'hadiah', 4000, 4, 'keyboard'),
+  ('Monitor 24 inch Full HD', 'Monitor LED 24 inch Full HD dengan refresh rate 75Hz untuk produktivitas', 'hadiah', 5000, 3, 'monitor'),
+  ('Gaming Chair Ergonomic', 'Gaming chair ergonomis dengan lumbar support dan adjustable height', 'hadiah', 4500, 3, 'chair')
 ON CONFLICT DO NOTHING;
 
 COMMIT;
