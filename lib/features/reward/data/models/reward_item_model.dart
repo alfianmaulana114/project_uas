@@ -47,5 +47,20 @@ class RewardItemModel extends RewardItem {
       'updated_at': updatedAt?.toIso8601String(),
     };
   }
+
+  RewardItem toEntity() {
+    return RewardItem(
+      id: id,
+      name: name,
+      description: description,
+      category: category,
+      pointsRequired: pointsRequired,
+      stock: stock,
+      imageUrl: imageUrl,
+      icon: icon,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
 }
 

@@ -57,13 +57,7 @@ class MyApp extends StatelessWidget {
         ),
         /// RewardProvider untuk fitur Poin & Achievement
         ChangeNotifierProvider(
-          create: (context) => RewardProvider(
-            getAllAchievementsUsecase: di.sl(),
-            getUserAchievementsUsecase: di.sl(),
-            checkAchievementsUsecase: di.sl(),
-            getLeaderboardUsecase: di.sl(),
-            authProvider: context.read<AuthProvider>(),
-          ),
+          create: (_) => di.sl<RewardProvider>(),
         ),
         /// AnalyticsProvider untuk fitur Analytics
         ChangeNotifierProvider(

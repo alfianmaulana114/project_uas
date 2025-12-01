@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../domain/entities/reward_item.dart';
 import '../../domain/entities/reward_redemption.dart';
+import '../providers/reward_provider.dart';
 
 /// Reward Screen
 /// Screen untuk menukar poin dengan voucher atau hadiah fisik
@@ -17,115 +18,26 @@ class RewardScreen extends StatefulWidget {
 class _RewardScreenState extends State<RewardScreen> {
   String _selectedCategory = 'semua'; // 'semua', 'voucher', 'hadiah'
 
-  // Mock data untuk reward items
-  final List<RewardItem> _mockRewards = [
-    RewardItem(
-      id: '1',
-      name: 'Voucher Starbucks',
-      description: 'Voucher senilai Rp 50.000',
-      category: 'voucher',
-      pointsRequired: 500,
-      stock: 25,
-      icon: 'coffee',
-    ),
-    RewardItem(
-      id: '2',
-      name: 'Voucher Grab Food',
-      description: 'Voucher senilai Rp 75.000',
-      category: 'voucher',
-      pointsRequired: 750,
-      stock: 15,
-      icon: 'restaurant',
-    ),
-    RewardItem(
-      id: '3',
-      name: 'Voucher Tokopedia',
-      description: 'Voucher senilai Rp 100.000',
-      category: 'voucher',
-      pointsRequired: 1000,
-      stock: 20,
-      icon: 'shopping_cart',
-    ),
-    RewardItem(
-      id: '4',
-      name: 'Wireless Earbuds',
-      description: 'TWS Bluetooth 5.0',
-      category: 'hadiah',
-      pointsRequired: 2500,
-      stock: 5,
-      icon: 'headphones',
-    ),
-    RewardItem(
-      id: '5',
-      name: 'Smart Watch',
-      description: 'Fitness Tracker',
-      category: 'hadiah',
-      pointsRequired: 3500,
-      stock: 3,
-      icon: 'watch',
-    ),
-    RewardItem(
-      id: '6',
-      name: 'Power Bank 10000mAh',
-      description: 'Fast Charging',
-      category: 'hadiah',
-      pointsRequired: 1800,
-      stock: 8,
-      icon: 'battery_charging_full',
-    ),
-    RewardItem(
-      id: '7',
-      name: 'Voucher Shopee',
-      description: 'Voucher senilai Rp 30.000',
-      category: 'voucher',
-      pointsRequired: 300,
-      stock: 30,
-      icon: 'shopping_bag',
-    ),
-  ];
-
-  // Mock data untuk riwayat penukaran
-  final List<RewardRedemption> _mockRedemptions = [
-    RewardRedemption(
-      id: '1',
-      userId: 'user1',
-      rewardItemId: '1',
-      rewardName: 'Voucher Starbucks',
-      pointsUsed: 500,
-      status: 'completed',
-      redeemedAt: DateTime(2025, 11, 20),
-      completedAt: DateTime(2025, 11, 20),
-    ),
-    RewardRedemption(
-      id: '2',
-      userId: 'user1',
-      rewardItemId: '2',
-      rewardName: 'Voucher Grab Food',
-      pointsUsed: 750,
-      status: 'completed',
-      redeemedAt: DateTime(2025, 11, 15),
-      completedAt: DateTime(2025, 11, 15),
-    ),
-    RewardRedemption(
-      id: '3',
-      userId: 'user1',
-      rewardItemId: '3',
-      rewardName: 'Voucher Tokopedia',
-      pointsUsed: 1000,
-      status: 'processing',
-      redeemedAt: DateTime(2025, 11, 10),
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Load reward items saat screen pertama kali dibuka
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RewardProvider>().loadRewardItems();
+      context.read<RewardProvider>().loadRedemptions();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final rewardProvider = context.watch<RewardProvider>();
     final user = auth.currentUser;
     final userPoints = user?.totalPoints ?? 0;
 
     final filteredRewards = _selectedCategory == 'semua'
-        ? _mockRewards
-        : _mockRewards.where((r) => r.category == _selectedCategory).toList();
+        ? rewardProvider.rewardItems
+        : rewardProvider.rewardItems.where((r) => r.category == _selectedCategory).toList();
 
     // Cek apakah screen ini dibuka via Navigator.push (dari Home) atau sebagai tab
     final canPop = Navigator.canPop(context);
@@ -269,14 +181,14 @@ class _RewardScreenState extends State<RewardScreen> {
                     20,
                     0,
                     20,
-                    index == _mockRedemptions.length - 1 ? 16 : 12,
+                    index == rewardProvider.redemptions.length - 1 ? 16 : 12,
                   ),
                   child: _RedemptionHistoryCard(
-                    redemption: _mockRedemptions[index],
+                    redemption: rewardProvider.redemptions[index],
                   ),
                 );
               },
-              childCount: _mockRedemptions.length,
+              childCount: rewardProvider.redemptions.length,
             ),
           ),
           SliverToBoxAdapter(
@@ -389,6 +301,83 @@ class _RewardScreenState extends State<RewardScreen> {
     );
   }
 
+  Future<void> _handleAddPoints(BuildContext context) async {
+    final rewardProvider = context.read<RewardProvider>();
+    
+    // Dialog untuk input jumlah poin
+    final pointsController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tambah Poin'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Masukkan jumlah poin yang ingin ditambahkan:'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: pointsController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Jumlah Poin',
+                hintText: 'Contoh: 1000',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (pointsController.text.isNotEmpty) {
+                Navigator.pop(context, true);
+              }
+            },
+            child: const Text('Tambah'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final points = int.tryParse(pointsController.text);
+    if (points == null || points <= 0) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Masukkan jumlah poin yang valid (lebih dari 0)'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+      return;
+    }
+
+    final result = await rewardProvider.addPoints(points);
+    if (!context.mounted) return;
+
+    if (result != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Berhasil menambahkan $points poin! Total poin sekarang: ${result['new_points']}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(rewardProvider.error ?? 'Gagal menambahkan poin'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
   Widget _buildPointsCard(BuildContext context, int userPoints) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -445,6 +434,17 @@ class _RewardScreenState extends State<RewardScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () => _handleAddPoints(context),
+                    icon: const Icon(Icons.add_circle_outline, size: 20),
+                    label: const Text('Tambah Poin'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
+                  ),
                 ],
               ),
               Icon(
@@ -473,7 +473,7 @@ class _RewardScreenState extends State<RewardScreen> {
                   child: Text(
                     'Dapatkan poin dengan mencapai target harian dan mempertahankan streak!',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.white,
+                      color: Colors.white.withOpacity(0.9),
                     ),
                   ),
                 ),
@@ -521,7 +521,7 @@ class _RewardScreenState extends State<RewardScreen> {
     );
   }
 
-  void _handleRedeem(BuildContext context, RewardItem reward, int userPoints) {
+  Future<void> _handleRedeem(BuildContext context, RewardItem reward, int userPoints) async {
     if (userPoints < reward.pointsRequired) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -542,34 +542,50 @@ class _RewardScreenState extends State<RewardScreen> {
       return;
     }
 
-    showDialog(
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Tukar Reward'),
+        title: const Text('Tukar Reward'),
         content: Text(
           'Apakah Anda yakin ingin menukar ${reward.pointsRequired} poin untuk ${reward.name}?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Batal'),
           ),
           FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement actual redemption logic
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${reward.name} berhasil ditukar!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Tukar'),
           ),
         ],
       ),
     );
+
+    if (confirmed != true) return;
+
+    final rewardProvider = context.read<RewardProvider>();
+    final result = await rewardProvider.redeemReward(reward.id);
+
+    if (!mounted) return;
+
+    if (result != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${reward.name} berhasil ditukar!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      // Reload redemptions untuk update history
+      await rewardProvider.loadRedemptions();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(rewardProvider.error ?? 'Gagal menukar reward'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
   }
 }
 

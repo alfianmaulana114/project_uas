@@ -39,5 +39,18 @@ class RewardRedemptionModel extends RewardRedemption {
       'completed_at': completedAt?.toIso8601String(),
     };
   }
+
+  RewardRedemption toEntity() {
+    return RewardRedemption(
+      id: id,
+      userId: userId,
+      rewardItemId: rewardItemId,
+      rewardName: rewardName,
+      pointsUsed: pointsUsed,
+      status: status,
+      redeemedAt: redeemedAt,
+      completedAt: completedAt,
+    );
+  }
 }
 

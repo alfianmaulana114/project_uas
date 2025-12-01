@@ -129,9 +129,6 @@ class _SocialMediaChallengePanelState extends State<SocialMediaChallengePanel> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(app.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                const SizedBox(height: 2),
-                                Text('~${app.minutesPerDay} min/hari',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.black54)),
                               ],
                             ),
                           ),

@@ -23,6 +23,10 @@ import 'features/reward/domain/usecases/get_all_achievements_usecase.dart';
 import 'features/reward/domain/usecases/get_user_achievements_usecase.dart';
 import 'features/reward/domain/usecases/check_achievements_usecase.dart';
 import 'features/reward/domain/usecases/get_leaderboard_usecase.dart';
+import 'features/reward/domain/usecases/get_all_reward_items_usecase.dart';
+import 'features/reward/domain/usecases/redeem_reward_usecase.dart';
+import 'features/reward/domain/usecases/get_user_redemptions_usecase.dart';
+import 'features/reward/domain/usecases/add_points_usecase.dart';
 import 'features/reward/presentation/providers/reward_provider.dart';
 import 'features/analytics/data/datasources/analytics_remote_datasource.dart';
 import 'features/analytics/data/repositories/analytics_repository_impl.dart';
@@ -169,6 +173,18 @@ Future<void> init() async {
   sl.registerLazySingleton(
     () => GetLeaderboardUsecase(sl<RewardRepository>()),
   );
+  sl.registerLazySingleton(
+    () => GetAllRewardItemsUsecase(sl<RewardRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => RedeemRewardUsecase(sl<RewardRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => GetUserRedemptionsUsecase(sl<RewardRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => AddPointsUsecase(sl<RewardRepository>()),
+  );
 
   /// Analytics Use Cases
   sl.registerLazySingleton(
@@ -220,6 +236,10 @@ Future<void> init() async {
       getUserAchievementsUsecase: sl<GetUserAchievementsUsecase>(),
       checkAchievementsUsecase: sl<CheckAchievementsUsecase>(),
       getLeaderboardUsecase: sl<GetLeaderboardUsecase>(),
+      getAllRewardItemsUsecase: sl<GetAllRewardItemsUsecase>(),
+      redeemRewardUsecase: sl<RedeemRewardUsecase>(),
+      getUserRedemptionsUsecase: sl<GetUserRedemptionsUsecase>(),
+      addPointsUsecase: sl<AddPointsUsecase>(),
       authProvider: sl<AuthProvider>(),
     ),
   );

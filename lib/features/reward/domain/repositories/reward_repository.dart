@@ -3,6 +3,8 @@ import '../../../../core/errors/failures.dart';
 import '../entities/achievement.dart';
 import '../entities/user_achievement.dart';
 import '../entities/leaderboard_entry.dart';
+import '../entities/reward_item.dart';
+import '../entities/reward_redemption.dart';
 
 abstract class RewardRepository {
   Future<Either<Failure, List<Achievement>>> getAllAchievements();
@@ -19,4 +21,10 @@ abstract class RewardRepository {
     String sortBy = 'points',
     int limit = 100,
   });
+
+  // Reward items and redemption
+  Future<Either<Failure, List<RewardItem>>> getAllRewardItems({String? category});
+  Future<Either<Failure, Map<String, dynamic>>> redeemReward({required String rewardItemId});
+  Future<Either<Failure, List<RewardRedemption>>> getUserRedemptions({int limit = 50});
+  Future<Either<Failure, Map<String, dynamic>>> addPoints({required int points});
 }

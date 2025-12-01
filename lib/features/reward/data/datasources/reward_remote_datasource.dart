@@ -1,8 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/errors/exceptions.dart' as app_exceptions;
 import '../models/achievement_model.dart';
 import '../models/user_achievement_model.dart';
 import '../models/leaderboard_entry_model.dart';
+import '../models/reward_item_model.dart';
+import '../models/reward_redemption_model.dart';
 
 abstract class RewardRemoteDatasource {
   Future<List<AchievementModel>> getAllAchievements();
@@ -20,6 +23,24 @@ abstract class RewardRemoteDatasource {
     String sortBy = 'points',
     int limit = 100,
   });
+
+  /// Get all reward items yang bisa ditukar
+  /// [category] adalah kategori filter (opsional, null berarti semua)
+  Future<List<RewardItemModel>> getAllRewardItems({String? category});
+
+  /// Redeem reward (menukar poin dengan reward)
+  /// [rewardItemId] adalah ID reward yang akan ditukar
+  /// Mengembalikan Map dengan info redemption
+  Future<Map<String, dynamic>> redeemReward(String rewardItemId);
+
+  /// Get user redemptions (history penukaran)
+  /// [limit] adalah jumlah maksimal data yang diambil
+  Future<List<RewardRedemptionModel>> getUserRedemptions({int limit = 50});
+
+  /// Add points to user (untuk testing atau bonus)
+  /// [points] adalah jumlah poin yang akan ditambahkan
+  /// Mengembalikan Map dengan info poin yang ditambahkan
+  Future<Map<String, dynamic>> addPoints(int points);
 }
 
 class RewardRemoteDatasourceImpl implements RewardRemoteDatasource {
@@ -204,5 +225,78 @@ class RewardRemoteDatasourceImpl implements RewardRemoteDatasource {
     }
     
     return entries;
+  }
+
+  @override
+  Future<List<RewardItemModel>> getAllRewardItems({String? category}) async {
+    try {
+      final params = <String, dynamic>{};
+      if (category != null && category.isNotEmpty && category != 'semua') {
+        params['p_category'] = category;
+      }
+      
+      final res = await _client.rpc(
+        'rpc_get_all_reward_items',
+        params: params.isEmpty ? null : params,
+      );
+      final list = (res as List).cast<Map<String, dynamic>>();
+      return list.map((e) => RewardItemModel.fromJson(e)).toList();
+    } catch (e) {
+      throw app_exceptions.ServerException('Gagal mengambil reward items: $e');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> redeemReward(String rewardItemId) async {
+    try {
+      final res = await _client.rpc(
+        'rpc_redeem_reward',
+        params: {'p_reward_item_id': rewardItemId},
+      );
+      return (res as Map<String, dynamic>);
+    } catch (e) {
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('poin tidak cukup') || msg.contains('points')) {
+        throw app_exceptions.AuthException('Poin tidak cukup');
+      }
+      if (msg.contains('stok') || msg.contains('stock')) {
+        throw app_exceptions.AuthException('Stok reward habis');
+      }
+      if (msg.contains('tidak ditemukan') || msg.contains('not found')) {
+        throw app_exceptions.AuthException('Reward tidak ditemukan');
+      }
+      throw app_exceptions.ServerException('Gagal menukar reward: $e');
+    }
+  }
+
+  @override
+  Future<List<RewardRedemptionModel>> getUserRedemptions({int limit = 50}) async {
+    try {
+      final res = await _client.rpc(
+        'rpc_get_user_redemptions',
+        params: {'p_limit': limit},
+      );
+      final list = (res as List).cast<Map<String, dynamic>>();
+      return list.map((e) => RewardRedemptionModel.fromJson(e)).toList();
+    } catch (e) {
+      throw app_exceptions.ServerException('Gagal mengambil history penukaran: $e');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> addPoints(int points) async {
+    try {
+      final res = await _client.rpc(
+        'rpc_add_points',
+        params: {'p_points': points},
+      );
+      return (res as Map<String, dynamic>);
+    } catch (e) {
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('harus lebih dari 0') || msg.contains('must be greater')) {
+        throw app_exceptions.AuthException('Poin harus lebih dari 0');
+      }
+      throw app_exceptions.ServerException('Gagal menambahkan poin: $e');
+    }
   }
 }
