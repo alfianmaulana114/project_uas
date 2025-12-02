@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/auth_user.dart';
@@ -41,5 +42,25 @@ abstract class AuthRepository {
   /// Mengembalikan Either<Failure, AuthUser?>
   /// Left = Failure, Right = AuthUser? (null jika tidak ada user yang login)
   Future<Either<Failure, AuthUser?>> getCurrentUser();
+
+  /// Method untuk upload avatar ke Supabase Storage
+  /// Mengembalikan Either<Failure, String> (URL avatar)
+  /// Left = Failure, Right = String (URL avatar)
+  /// [userId] adalah ID user
+  /// [imagePath] adalah path file gambar yang akan diupload
+  Future<Either<Failure, String>> uploadAvatar({
+    required String userId,
+    required String imagePath,
+  });
+
+  /// Method untuk upload avatar ke Supabase Storage dengan bytes
+  /// Mengembalikan Either<Failure, String> (URL avatar)
+  /// Left = Failure, Right = String (URL avatar)
+  /// [userId] adalah ID user
+  /// [imageBytes] adalah bytes dari gambar yang akan diupload
+  Future<Either<Failure, String>> uploadAvatarBytes({
+    required String userId,
+    required Uint8List imageBytes,
+  });
 }
 

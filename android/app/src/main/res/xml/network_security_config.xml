@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Konfigurasi untuk mengizinkan koneksi HTTPS ke Supabase -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">zetqkryzixfxkjubejbw.supabase.co</domain>
+        <trust-anchors>
+            <!-- Trust system certificates -->
+            <certificates src="system" />
+            <!-- Trust user added CAs while debuggable only -->
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+    
+    <!-- Base configuration untuk semua domain lainnya -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
+

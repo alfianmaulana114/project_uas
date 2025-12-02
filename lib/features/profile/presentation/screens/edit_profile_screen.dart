@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 
@@ -23,6 +25,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool _obscureCurrentPassword = true;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
+  XFile? _selectedXFile; // Simpan XFile untuk upload (path lebih reliable)
+  Uint8List? _selectedImageBytes; // Simpan bytes untuk preview
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -47,6 +52,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        // Baca bytes untuk preview
+        final imageBytes = await image.readAsBytes();
+        setState(() {
+          _selectedXFile = image; // Simpan XFile untuk upload (path lebih reliable)
+          _selectedImageBytes = imageBytes; // Simpan bytes untuk preview
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memilih gambar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _updateProfile() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -65,6 +99,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         setState(() => _isLoading = false);
       }
       return;
+    }
+
+    // Upload gambar jika ada gambar yang dipilih
+    String? avatarUrl = currentUser.avatarUrl;
+    if (_selectedXFile != null) {
+      // Coba upload menggunakan path dari XFile dulu (lebih efisien, tidak perlu path_provider)
+      bool uploadSuccess = await authProvider.uploadAvatar(_selectedXFile!.path);
+      
+      // Jika gagal dengan path, coba dengan bytes sebagai fallback
+      if (!uploadSuccess && _selectedImageBytes != null) {
+        // Cek apakah error karena path atau masalah lain
+        if (authProvider.error?.contains('tidak ditemukan') == true ||
+            authProvider.error?.contains('MissingPlugin') == true) {
+          // Coba dengan bytes
+          uploadSuccess = await authProvider.uploadAvatarBytes(_selectedImageBytes!);
+        }
+      }
+      
+      if (!uploadSuccess) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.error ?? 'Gagal mengupload gambar.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
+      // Ambil avatar URL dari current user yang sudah diupdate
+      avatarUrl = authProvider.currentUser?.avatarUrl;
     }
 
     final newEmail = _emailController.text.trim();
@@ -92,6 +158,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       email: newEmail,
       fullName: _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
       username: _usernameController.text.trim().isEmpty ? null : _usernameController.text.trim(),
+      avatarUrl: avatarUrl,
     );
 
     // Update ke Supabase melalui provider
@@ -181,6 +248,56 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     'Informasi Profil',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Upload Avatar Section
+                  Center(
+                    child: Column(
+                      children: [
+                        Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                              backgroundImage: _selectedImageBytes != null
+                                  ? MemoryImage(_selectedImageBytes!)
+                                  : (context.watch<AuthProvider>().currentUser?.avatarUrl != null &&
+                                          context.watch<AuthProvider>().currentUser!.avatarUrl!.isNotEmpty
+                                      ? NetworkImage(context.watch<AuthProvider>().currentUser!.avatarUrl!)
+                                      : null) as ImageProvider?,
+                              child: _selectedImageBytes == null &&
+                                      (context.watch<AuthProvider>().currentUser?.avatarUrl == null ||
+                                          context.watch<AuthProvider>().currentUser!.avatarUrl!.isEmpty)
+                                  ? Icon(
+                                      Icons.person,
+                                      size: 50,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    )
+                                  : null,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: CircleAvatar(
+                                radius: 18,
+                                backgroundColor: Theme.of(context).colorScheme.primary,
+                                child: IconButton(
+                                  icon: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                                  onPressed: _pickImage,
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: _pickImage,
+                          icon: const Icon(Icons.photo_library),
+                          label: const Text('Pilih Foto Profil'),
+                        ),
+                      ],
                         ),
                   ),
                   const SizedBox(height: 16),

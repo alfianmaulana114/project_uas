@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:typed_data';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../models/auth_user_model.dart';
@@ -52,6 +54,26 @@ abstract class AuthRemoteDatasource {
   /// Mengembalikan null jika tidak ada user yang login
   /// Throws AuthException jika terjadi error
   Future<AuthUserModel?> getCurrentUser();
+
+  /// Method untuk upload avatar ke Supabase Storage
+  /// [userId] adalah ID user
+  /// [imagePath] adalah path file gambar yang akan diupload
+  /// Mengembalikan URL avatar yang sudah diupload
+  /// Throws AuthException jika gagal
+  Future<String> uploadAvatar({
+    required String userId,
+    required String imagePath,
+  });
+
+  /// Method untuk upload avatar ke Supabase Storage dengan bytes
+  /// [userId] adalah ID user
+  /// [imageBytes] adalah bytes dari gambar yang akan diupload
+  /// Mengembalikan URL avatar yang sudah diupload
+  /// Throws AuthException jika gagal
+  Future<String> uploadAvatarBytes({
+    required String userId,
+    required Uint8List imageBytes,
+  });
 }
 
 /// Implementation dari AuthRemoteDatasource menggunakan Supabase
@@ -466,7 +488,7 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
   @override
   Future<AuthUserModel> updateUser(AuthUserModel user) async {
     try {
-      // Hanya update field yang bisa diubah user (email, full_name, dan username)
+      // Hanya update field yang bisa diubah user (email, full_name, username, dan avatar_url)
       // Jangan update stats (total_points, current_streak, longest_streak) karena itu dihitung otomatis
       final updateData = <String, dynamic>{};
       updateData['email'] = user.email;
@@ -479,6 +501,11 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
         updateData['username'] = user.username;
       } else {
         updateData['username'] = null;
+      }
+      if (user.avatarUrl != null) {
+        updateData['avatar_url'] = user.avatarUrl;
+      } else {
+        updateData['avatar_url'] = null;
       }
       
       // Update ke Supabase
@@ -540,6 +567,197 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
     } catch (e) {
       if (e is AuthException) rethrow;
       throw AuthException('Gagal memperbarui kredensial: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<String> uploadAvatar({
+    required String userId,
+    required String imagePath,
+  }) async {
+    try {
+      // Baca file dari path (path dari XFile lebih reliable)
+      final imageFile = File(imagePath);
+      
+      // Pastikan file exists
+      if (!await imageFile.exists()) {
+        throw AuthException('File gambar tidak ditemukan. Silakan pilih gambar lagi.');
+      }
+      
+      // Generate nama file unik dengan timestamp
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = '$userId/$timestamp.jpg';
+      
+      // Upload ke Supabase Storage bucket 'avatars'
+      // Pastikan bucket 'avatars' sudah dibuat di Supabase Storage
+      await SupabaseConfig.client.storage
+          .from('avatars')
+          .upload(fileName, imageFile, fileOptions: sfb.FileOptions(
+            upsert: true, // Replace file jika sudah ada
+            contentType: 'image/jpeg',
+          ));
+
+      // Dapatkan public URL dari file yang sudah diupload
+      final publicUrl = SupabaseConfig.client.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (e) {
+      // Handle error spesifik
+      if (e is AuthException) {
+        rethrow;
+      }
+      if (e.toString().contains('Bucket not found') ||
+          e.toString().contains('bucket')) {
+        throw AuthException(
+          'Bucket "avatars" belum dibuat di Supabase Storage. '
+          'Silakan buat bucket "avatars" di Supabase Dashboard → Storage.',
+        );
+      }
+      if (e.toString().contains('permission denied') ||
+          e.toString().contains('policy') ||
+          e.toString().contains('RLS') ||
+          e.toString().contains('new row violates row-level security')) {
+        throw AuthException(
+          'Tidak memiliki izin untuk upload gambar.\n\n'
+          'Langkah perbaikan:\n'
+          '1. Buka Supabase Dashboard → Storage\n'
+          '2. Pastikan bucket "avatars" sudah dibuat dan set sebagai PUBLIC\n'
+          '3. Buka SQL Editor dan jalankan script: database/setup_storage_policy.sql\n'
+          '4. Refresh aplikasi setelah setup\n\n'
+          'Lihat file database/STORAGE_SETUP.md untuk panduan lengkap.'
+        );
+      }
+      if (e.toString().contains('_Namespace') ||
+          e.toString().contains('Unsupported operation')) {
+        throw AuthException(
+          'Gagal mengakses file. Pastikan aplikasi memiliki izin akses file. '
+          'Jika masalah berlanjut, coba restart aplikasi.',
+        );
+      }
+      throw AuthException('Gagal mengupload avatar: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<String> uploadAvatarBytes({
+    required String userId,
+    required Uint8List imageBytes,
+  }) async {
+    File? tempFile;
+    try {
+      // Generate nama file unik dengan timestamp
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = '$userId/$timestamp.jpg';
+      
+      // Gunakan path sederhana yang tidak memerlukan path_provider
+      // Coba beberapa lokasi yang mungkin bisa diakses
+      final possiblePaths = [
+        'avatar_$timestamp.jpg', // Path relatif
+        './avatar_$timestamp.jpg', // Path relatif dengan prefix
+      ];
+      
+      File? createdFile;
+      for (final path in possiblePaths) {
+        try {
+          final file = File(path);
+          await file.writeAsBytes(imageBytes);
+          
+          if (await file.exists()) {
+            createdFile = file;
+            tempFile = file;
+            break;
+          }
+        } catch (_) {
+          // Coba path berikutnya
+          continue;
+        }
+      }
+      
+      if (createdFile == null) {
+        throw AuthException(
+          'Gagal membuat file temporary untuk upload. '
+          'Pastikan aplikasi memiliki izin akses penyimpanan. '
+          'Coba restart aplikasi atau rebuild aplikasi.'
+        );
+      }
+      
+      // Upload ke Supabase Storage bucket 'avatars'
+      try {
+        await SupabaseConfig.client.storage
+            .from('avatars')
+            .upload(fileName, createdFile, fileOptions: sfb.FileOptions(
+              upsert: true, // Replace file jika sudah ada
+              contentType: 'image/jpeg',
+            ));
+      } catch (uploadError) {
+        // Log error untuk debugging
+        print('Upload error: ${uploadError.toString()}');
+        rethrow;
+      }
+
+      // Dapatkan public URL dari file yang sudah diupload
+      final publicUrl = SupabaseConfig.client.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (e) {
+      // Handle error spesifik
+      if (e is AuthException) {
+        rethrow;
+      }
+      
+      // Log error untuk debugging
+      print('Upload avatar error: ${e.toString()}');
+      print('Error type: ${e.runtimeType}');
+      
+      if (e.toString().contains('Bucket not found') ||
+          e.toString().contains('bucket') ||
+          e.toString().contains('does not exist')) {
+        throw AuthException(
+          'Bucket "avatars" belum dibuat di Supabase Storage. '
+          'Silakan buat bucket "avatars" di Supabase Dashboard → Storage.',
+        );
+      }
+      if (e.toString().contains('permission denied') ||
+          e.toString().contains('policy') ||
+          e.toString().contains('RLS') ||
+          e.toString().contains('new row violates row-level security')) {
+        throw AuthException(
+          'Tidak memiliki izin untuk upload gambar.\n\n'
+          'Langkah perbaikan:\n'
+          '1. Buka Supabase Dashboard → Storage\n'
+          '2. Pastikan bucket "avatars" sudah dibuat dan set sebagai PUBLIC\n'
+          '3. Buka SQL Editor dan jalankan script: database/setup_storage_policy.sql\n'
+          '4. Refresh aplikasi setelah setup\n\n'
+          'Lihat file database/STORAGE_SETUP.md untuk panduan lengkap.'
+        );
+      }
+      if (e.toString().contains('MissingPluginException') ||
+          e.toString().contains('_Namespace') ||
+          e.toString().contains('Unsupported operation')) {
+        throw AuthException(
+          'Gagal mengakses file sistem. '
+          'Coba gunakan path dari gambar yang dipilih langsung. '
+          'Jika masalah berlanjut, restart aplikasi atau rebuild aplikasi. '
+          'Error: ${e.toString()}',
+        );
+      }
+      throw AuthException('Gagal mengupload avatar: ${e.toString()}');
+    } finally {
+      // Hapus file temporary setelah upload
+      if (tempFile != null) {
+        try {
+          if (await tempFile.exists()) {
+            await tempFile.delete();
+          }
+        } catch (deleteError) {
+          // Log error saat menghapus (tidak critical)
+          print('Warning: Gagal menghapus file temporary: ${deleteError.toString()}');
+        }
+      }
     }
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
@@ -144,6 +145,52 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(AuthFailure(e.message));
     } catch (e) {
       return Left(ServerFailure('Gagal memperbarui kredensial: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadAvatar({
+    required String userId,
+    required String imagePath,
+  }) async {
+    try {
+      /// Memanggil remote datasource untuk upload avatar
+      final result = await remoteDatasource.uploadAvatar(
+        userId: userId,
+        imagePath: imagePath,
+      );
+
+      /// Jika berhasil, return Right dengan URL avatar
+      return Right(result);
+    } on AuthException catch (e) {
+      /// Jika terjadi AuthException, convert ke AuthFailure
+      return Left(AuthFailure(e.message));
+    } catch (e) {
+      /// Jika terjadi error lain, convert ke ServerFailure
+      return Left(ServerFailure('Gagal mengupload avatar: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadAvatarBytes({
+    required String userId,
+    required Uint8List imageBytes,
+  }) async {
+    try {
+      /// Memanggil remote datasource untuk upload avatar dengan bytes
+      final result = await remoteDatasource.uploadAvatarBytes(
+        userId: userId,
+        imageBytes: imageBytes,
+      );
+
+      /// Jika berhasil, return Right dengan URL avatar
+      return Right(result);
+    } on AuthException catch (e) {
+      /// Jika terjadi AuthException, convert ke AuthFailure
+      return Left(AuthFailure(e.message));
+    } catch (e) {
+      /// Jika terjadi error lain, convert ke ServerFailure
+      return Left(ServerFailure('Gagal mengupload avatar: ${e.toString()}'));
     }
   }
 }

@@ -216,6 +216,7 @@ Future<void> init() async {
       signOutUsecase: sl<SignOutUsecase>(),
       getCurrentUserUsecase: sl<GetCurrentUserUsecase>(),
       updateUserUsecase: sl<UpdateUserUsecase>(),
+      authRepository: sl<AuthRepository>(),
     ),
   );
 

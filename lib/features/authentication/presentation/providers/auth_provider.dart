@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthUser;
 import '../../../../core/config/supabase_config.dart';
@@ -7,6 +8,7 @@ import '../../domain/usecases/sign_up_usecase.dart';
 import '../../domain/usecases/sign_out_usecase.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/update_user_usecase.dart';
+import '../../domain/repositories/auth_repository.dart';
 
 /// AuthProvider untuk mengelola state authentication
 /// Menggunakan ChangeNotifier untuk state management
@@ -32,6 +34,9 @@ class AuthProvider extends ChangeNotifier {
   /// Instance dari UpdateUserUsecase
   final UpdateUserUsecase updateUserUsecase;
 
+  /// Instance dari AuthRepository untuk upload avatar
+  final AuthRepository authRepository;
+
   /// Current user yang sedang login
   /// Hanya disimpan di memory, tidak persist ke local storage
   auth_entity.AuthUser? _currentUser;
@@ -50,6 +55,7 @@ class AuthProvider extends ChangeNotifier {
     required this.signOutUsecase,
     required this.getCurrentUserUsecase,
     required this.updateUserUsecase,
+    required this.authRepository,
   });
 
   /// Getter untuk current user
@@ -350,6 +356,120 @@ class AuthProvider extends ChangeNotifier {
       totalPoints: totalPoints,
     );
     notifyListeners();
+  }
+
+  /// Method untuk upload avatar
+  /// [imagePath] adalah path file gambar yang akan diupload
+  /// Mengembalikan true jika berhasil, false jika gagal
+  Future<bool> uploadAvatar(String imagePath) async {
+    /// Set loading state menjadi true
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    /// Cek apakah ada user yang login
+    if (_currentUser == null) {
+      _isLoading = false;
+      _error = 'User tidak ditemukan. Silakan login ulang.';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      /// Upload avatar ke Supabase Storage
+      final result = await authRepository.uploadAvatar(
+        userId: _currentUser!.id,
+        imagePath: imagePath,
+      );
+
+      /// Set loading state menjadi false
+      _isLoading = false;
+
+      /// Handle result
+      return result.fold(
+        /// Jika gagal (Left = Failure)
+        (failure) {
+          _error = failure.message;
+          notifyListeners();
+          return false;
+        },
+        /// Jika berhasil (Right = String URL)
+        (avatarUrl) {
+          /// Update current user dengan avatar URL baru
+          _currentUser = _currentUser!.copyWith(avatarUrl: avatarUrl);
+          
+          /// Update avatar_url di database
+          updateUser(_currentUser!);
+          
+          _error = null;
+          notifyListeners();
+          return true;
+        },
+      );
+    } catch (e) {
+      /// Set loading state menjadi false
+      _isLoading = false;
+      _error = 'Gagal mengupload avatar: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Method untuk upload avatar dengan bytes langsung
+  /// [imageBytes] adalah bytes dari gambar yang akan diupload
+  /// Mengembalikan true jika berhasil, false jika gagal
+  Future<bool> uploadAvatarBytes(Uint8List imageBytes) async {
+    /// Set loading state menjadi true
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    /// Cek apakah ada user yang login
+    if (_currentUser == null) {
+      _isLoading = false;
+      _error = 'User tidak ditemukan. Silakan login ulang.';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      /// Upload avatar ke Supabase Storage dengan bytes
+      final result = await authRepository.uploadAvatarBytes(
+        userId: _currentUser!.id,
+        imageBytes: imageBytes,
+      );
+
+      /// Set loading state menjadi false
+      _isLoading = false;
+
+      /// Handle result
+      return result.fold(
+        /// Jika gagal (Left = Failure)
+        (failure) {
+          _error = failure.message;
+          notifyListeners();
+          return false;
+        },
+        /// Jika berhasil (Right = String URL)
+        (avatarUrl) {
+          /// Update current user dengan avatar URL baru
+          _currentUser = _currentUser!.copyWith(avatarUrl: avatarUrl);
+          
+          /// Update avatar_url di database
+          updateUser(_currentUser!);
+          
+          _error = null;
+          notifyListeners();
+          return true;
+        },
+      );
+    } catch (e) {
+      /// Set loading state menjadi false
+      _isLoading = false;
+      _error = 'Gagal mengupload avatar: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
   }
 }
 
