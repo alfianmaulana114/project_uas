@@ -45,7 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final pages = <Widget>[
       _HomeTab(onNavigateToChallenges: _switchToChallengeTab),
       const ChallengeListScreen(),
-      const RewardScreen(),
+      const RewardScreen(showBackButton: false), // Tab navigation, tidak perlu tombol back
       const AnalyticsScreen(),
       const ProfileScreen(),
     ];

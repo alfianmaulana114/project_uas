@@ -9,7 +9,13 @@ import '../providers/reward_provider.dart';
 /// Screen untuk menukar poin dengan voucher atau hadiah fisik
 /// Mengikuti desain Figma dengan tema Strava
 class RewardScreen extends StatefulWidget {
-  const RewardScreen({super.key});
+  /// Apakah tombol back harus ditampilkan
+  /// Default: null (auto-detect dari Navigator.canPop)
+  /// false: tidak tampilkan tombol back (untuk tab navigation)
+  /// true: tampilkan tombol back (untuk pushed route)
+  final bool? showBackButton;
+
+  const RewardScreen({super.key, this.showBackButton});
 
   @override
   State<RewardScreen> createState() => _RewardScreenState();
@@ -40,11 +46,13 @@ class _RewardScreenState extends State<RewardScreen> {
         : rewardProvider.rewardItems.where((r) => r.category == _selectedCategory).toList();
 
     // Cek apakah screen ini dibuka via Navigator.push (dari Home) atau sebagai tab
-    final canPop = Navigator.canPop(context);
+    // Jika showBackButton sudah di-set, gunakan nilai tersebut
+    // Jika null, auto-detect dari Navigator.canPop
+    final shouldShowBackButton = widget.showBackButton ?? Navigator.canPop(context);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: canPop
+      appBar: shouldShowBackButton
           ? AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
@@ -80,7 +88,7 @@ class _RewardScreenState extends State<RewardScreen> {
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-            child: _buildHeader(context, user, canPop),
+            child: _buildHeader(context, user, shouldShowBackButton),
           ),
           SliverToBoxAdapter(
             child: _buildPointsCard(context, userPoints),
