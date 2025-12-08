@@ -32,7 +32,8 @@ class BlockingOverlayActivity : Activity() {
         window.navigationBarColor = Color.parseColor("#FF4444")
         
         val blockedPackage = intent.getStringExtra("blocked_package") ?: "Aplikasi"
-        val appName = getAppName(blockedPackage)
+        // Gunakan app name dari intent jika ada, jika tidak ambil dari package manager
+        val appName = intent.getStringExtra("blocked_app_name") ?: getAppName(blockedPackage)
         
         // Buat UI blocking
         val rootView = android.widget.LinearLayout(this).apply {
@@ -49,7 +50,7 @@ class BlockingOverlayActivity : Activity() {
         }
         
         val titleView = TextView(this).apply {
-            text = "Aplikasi Diblokir"
+            text = "⚠️ Aplikasi Diblokir!"
             textSize = 28f
             setTextColor(Color.WHITE)
             gravity = android.view.Gravity.CENTER
@@ -57,11 +58,12 @@ class BlockingOverlayActivity : Activity() {
         }
         
         val messageView = TextView(this).apply {
-            text = "$appName sedang diblokir untuk membantu Anda fokus pada tujuan detox sosial media."
+            text = "$appName sedang diblokir dan TIDAK DAPAT DIBUKA.\n\nAplikasi ini diblokir untuk membantu Anda fokus pada tujuan detox sosial media.\n\nJika ingin menggunakan $appName lagi, silakan unblock aplikasi di halaman Challenge."
             textSize = 16f
             setTextColor(Color.WHITE)
             gravity = android.view.Gravity.CENTER
             setPadding(0, 10, 0, 30)
+            lineSpacing = 4f, 1.2f
         }
         
         val backButton = Button(this).apply {
@@ -100,13 +102,33 @@ class BlockingOverlayActivity : Activity() {
     }
     
     override fun onBackPressed() {
-        // Prevent back button
+        // Prevent back button - langsung kembali ke home
         val homeIntent = Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_HOME)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         startActivity(homeIntent)
         finish()
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        // Pastikan overlay tetap di foreground
+        val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_HOME)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        startActivity(homeIntent)
+    }
+    
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        // Jika user mencoba switch app, kembali ke home
+        val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_HOME)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        startActivity(homeIntent)
     }
 }
 

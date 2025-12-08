@@ -41,13 +41,27 @@ Untuk layar blocking yang lebih baik, berikan izin overlay:
 4. Aplikasi akan ditambahkan ke daftar block
 5. Ketika aplikasi yang diblokir dibuka, aplikasi akan otomatis ditutup dan menampilkan layar blocking
 
-## 🔧 Cara Kerja
+## 🔧 Cara Kerja (DIPERKUAT)
 
-1. **Accessibility Service** memantau aplikasi yang dibuka
+1. **Accessibility Service** memantau aplikasi yang dibuka dengan:
+   - Deteksi real-time melalui accessibility events (setiap perubahan window)
+   - Monitoring berkelanjutan setiap 200ms untuk deteksi cepat
+   - Multiple detection methods untuk memastikan aplikasi terdeteksi
+   
 2. Ketika aplikasi yang diblokir terdeteksi, service akan:
-   - Menutup aplikasi tersebut
+   - **Segera menutup aplikasi** dengan multiple methods (back action + home action)
+   - **Memantau terus-menerus** untuk mencegah aplikasi dibuka kembali
    - Menampilkan **BlockingOverlayActivity** dengan pesan blocking
+   - **Mencegah bypass** dengan monitoring aktif
+   
 3. Pengguna tidak bisa membuka aplikasi yang diblokir sampai di-unblock
+4. **Aplikasi yang didukung untuk blocking efektif:**
+   - ✅ TikTok (com.zhiliaoapp.musically)
+   - ✅ Instagram (com.instagram.android)
+   - ✅ Facebook (com.facebook.katana)
+   - ✅ Snapchat (com.snapchat.android)
+   - ✅ YouTube (com.google.android.youtube)
+   - ✅ Twitter/X (com.twitter.android)
 
 ## ⚠️ Catatan Penting
 
@@ -64,10 +78,15 @@ Untuk layar blocking yang lebih baik, berikan izin overlay:
 3. Cek kembali status di aplikasi
 
 ### Aplikasi masih bisa dibuka meskipun sudah diblokir
-1. Pastikan Accessibility Service sudah aktif
+1. **Pastikan Accessibility Service sudah aktif** (ini yang paling penting!)
 2. Pastikan blocking sudah di-enable di aplikasi
-3. Restart aplikasi
+3. Restart aplikasi untuk memastikan service berjalan
 4. Cek apakah package name aplikasi sudah benar
+5. **Tunggu beberapa detik** - monitoring berjalan setiap 200ms, jadi mungkin ada delay kecil
+6. Jika masih tidak berfungsi, coba:
+   - Nonaktifkan lalu aktifkan kembali Accessibility Service
+   - Restart perangkat Android
+   - Pastikan aplikasi Detox Social Media tidak di-force stop
 
 ### Layar blocking tidak muncul
 1. Berikan izin overlay (Display over other apps)

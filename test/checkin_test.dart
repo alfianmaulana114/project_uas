@@ -8,6 +8,7 @@ import 'package:project_uas/features/challenge/domain/usecases/get_all_challenge
 import 'package:project_uas/features/challenge/domain/usecases/get_active_challenge_usecase.dart';
 import 'package:project_uas/features/challenge/domain/usecases/start_challenge_usecase.dart';
 import 'package:project_uas/features/challenge/domain/usecases/check_in_usecase.dart';
+import 'package:project_uas/features/challenge/domain/usecases/has_checked_in_today_usecase.dart';
 import 'package:project_uas/features/challenge/domain/repositories/challenge_repository.dart';
 import 'package:project_uas/core/errors/failures.dart';
 
@@ -29,6 +30,11 @@ class _DummyRepo implements ChallengeRepository {
 
   @override
   Future<Either<Failure, UserChallenge>> startChallenge({required String challengeId, DateTime? startDate, String? bookName, String? eventName}) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Either<Failure, bool>> hasCheckedInToday(String userChallengeId) async {
     throw UnimplementedError();
   }
 }
@@ -65,6 +71,15 @@ class _StubCheckIn extends CheckInUsecase {
   }) async {
     if (error != null) return Left(error!);
     return Right(result);
+  }
+}
+
+class _StubHasCheckedInToday extends HasCheckedInTodayUsecase {
+  final bool hasChecked;
+  _StubHasCheckedInToday(this.hasChecked) : super(_DummyRepo());
+  @override
+  Future<Either<Failure, bool>> call(String userChallengeId) async {
+    return Right(hasChecked);
   }
 }
 
@@ -120,6 +135,7 @@ void main() {
       getActiveChallengeUsecase: _StubGetActive(),
       startChallengeUsecase: _StubStart(makeChallenge(day: 0, success: 0)),
       checkInUsecase: _StubCheckIn(result: makeResult(isSuccess: true, currentDay: 1, successDays: 1)),
+      hasCheckedInTodayUsecase: _StubHasCheckedInToday(false),
     );
     await provider.start(challengeId: 'c1');
     final res = await provider.checkIn(userChallengeId: 'uc1', isSuccess: true);
@@ -133,6 +149,7 @@ void main() {
       getActiveChallengeUsecase: _StubGetActive(),
       startChallengeUsecase: _StubStart(makeChallenge(day: 0, success: 0)),
       checkInUsecase: _StubCheckIn(result: makeResult(isSuccess: false, currentDay: 1, successDays: 0, currentStreak: 0)),
+      hasCheckedInTodayUsecase: _StubHasCheckedInToday(false),
     );
     await provider.start(challengeId: 'c1');
     final res = await provider.checkIn(userChallengeId: 'uc1', isSuccess: false);
@@ -148,6 +165,7 @@ void main() {
       getActiveChallengeUsecase: _StubGetActive(),
       startChallengeUsecase: _StubStart(makeChallenge(day: 1, success: 1)),
       checkInUsecase: _StubCheckIn(result: makeResult(isSuccess: true), error: fail),
+      hasCheckedInTodayUsecase: _StubHasCheckedInToday(false),
     );
     await provider.start(challengeId: 'c1');
     final res = await provider.checkIn(userChallengeId: 'uc1', isSuccess: true);
@@ -161,6 +179,7 @@ void main() {
       getActiveChallengeUsecase: _StubGetActive(),
       startChallengeUsecase: _StubStart(makeChallenge(day: 2, success: 1)),
       checkInUsecase: _StubCheckIn(result: makeResult(isSuccess: true, currentDay: 3, successDays: 2, currentStreak: 3)),
+      hasCheckedInTodayUsecase: _StubHasCheckedInToday(false),
     );
     await provider.start(challengeId: 'c1');
     final res = await provider.checkIn(userChallengeId: 'uc1', isSuccess: true);
@@ -174,6 +193,7 @@ void main() {
       getActiveChallengeUsecase: _StubGetActive(),
       startChallengeUsecase: _StubStart(makeChallenge(day: 2, success: 2)),
       checkInUsecase: _StubCheckIn(result: makeResult(isSuccess: false, currentDay: 3, successDays: 2, currentStreak: 0)),
+      hasCheckedInTodayUsecase: _StubHasCheckedInToday(false),
     );
     await provider.start(challengeId: 'c1');
     final res = await provider.checkIn(userChallengeId: 'uc1', isSuccess: false);
@@ -196,6 +216,7 @@ void main() {
           totalPoints: 100,
         ),
       ),
+      hasCheckedInTodayUsecase: _StubHasCheckedInToday(false),
     );
     await provider.start(challengeId: 'c1');
     final res = await provider.checkIn(userChallengeId: 'uc1', isSuccess: true);

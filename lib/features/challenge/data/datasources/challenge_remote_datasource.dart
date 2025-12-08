@@ -39,6 +39,10 @@ abstract class ChallengeRemoteDatasource {
     DateTime? checkInDate,
     int durationMinutes = 0,
   });
+
+  /// Check if user has checked in today for a specific challenge
+  /// Returns true if check-in exists for today, false otherwise
+  Future<bool> hasCheckedInToday(String userChallengeId);
 }
 
 /// Implementation dari ChallengeRemoteDatasource menggunakan Supabase
@@ -189,6 +193,29 @@ class ChallengeRemoteDatasourceImpl implements ChallengeRemoteDatasource {
         }
       }
       throw ServerException('Gagal melakukan check-in: $e');
+    }
+  }
+
+  @override
+  Future<bool> hasCheckedInToday(String userChallengeId) async {
+    try {
+      // Query ke tabel checkins untuk mengecek apakah sudah check-in hari ini
+      final today = DateTime.now();
+      final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      
+      final response = await SupabaseConfig.client
+          .from('checkins')
+          .select('id')
+          .eq('user_challenge_id', userChallengeId)
+          .eq('checkin_date', todayStr)
+          .maybeSingle();
+      
+      // Jika response tidak null, berarti sudah check-in hari ini
+      return response != null;
+    } catch (e) {
+      // Jika error, return false (anggap belum check-in)
+      // Ini untuk mencegah error yang tidak perlu
+      return false;
     }
   }
 }

@@ -42,6 +42,10 @@ abstract class ChallengeRepository {
     DateTime? checkInDate,
     int durationMinutes = 0,
   });
+
+  /// Check if user has checked in today for a specific challenge
+  /// Returns true if check-in exists for today, false otherwise
+  Future<Either<Failure, bool>> hasCheckedInToday(String userChallengeId);
 }
 
 

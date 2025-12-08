@@ -202,7 +202,7 @@ class ProgressSummaryWidget extends StatelessWidget {
                         final totalDays = _calculateTotalDays(userChallenge);
                         final currentDay = userChallenge.currentDay;
                         final progress = (currentDay / totalDays).clamp(0.0, 1.0);
-                        final hasCheckedToday = challengeProvider.hasCheckedInToday(userChallenge.id);
+                        final hasCheckedToday = challengeProvider.hasCheckedInTodaySync(userChallenge.id);
                         final isLast = index == activeChallenges.length - 1;
 
                         return Padding(

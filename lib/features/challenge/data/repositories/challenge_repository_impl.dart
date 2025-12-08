@@ -124,6 +124,21 @@ class ChallengeRepositoryImpl implements ChallengeRepository {
       return Left(ServerFailure('Gagal check-in: ${e.toString()}'));
     }
   }
+
+  @override
+  Future<Either<Failure, bool>> hasCheckedInToday(String userChallengeId) async {
+    try {
+      /// Memanggil remote datasource untuk mengecek check-in hari ini
+      final result = await remoteDatasource.hasCheckedInToday(userChallengeId);
+      return Right(result);
+    } on ServerException catch (e) {
+      /// Jika terjadi ServerException, convert ke ServerFailure
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      /// Jika terjadi error lain, convert ke ServerFailure
+      return Left(ServerFailure('Gagal mengecek check-in: ${e.toString()}'));
+    }
+  }
 }
 
 

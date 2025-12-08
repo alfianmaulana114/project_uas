@@ -15,6 +15,7 @@ import 'features/challenge/domain/usecases/get_all_challenges_usecase.dart';
 import 'features/challenge/domain/usecases/get_active_challenge_usecase.dart';
 import 'features/challenge/domain/usecases/start_challenge_usecase.dart';
 import 'features/challenge/domain/usecases/check_in_usecase.dart';
+import 'features/challenge/domain/usecases/has_checked_in_today_usecase.dart';
 import 'features/challenge/presentation/providers/challenge_provider.dart';
 import 'features/reward/data/datasources/reward_remote_datasource.dart';
 import 'features/reward/data/repositories/reward_repository_impl.dart';
@@ -159,6 +160,9 @@ Future<void> init() async {
   sl.registerLazySingleton(
     () => CheckInUsecase(sl<ChallengeRepository>()),
   );
+  sl.registerLazySingleton(
+    () => HasCheckedInTodayUsecase(sl<ChallengeRepository>()),
+  );
 
   /// Reward Use Cases
   sl.registerLazySingleton(
@@ -227,6 +231,7 @@ Future<void> init() async {
       getActiveChallengeUsecase: sl<GetActiveChallengeUsecase>(),
       startChallengeUsecase: sl<StartChallengeUsecase>(),
       checkInUsecase: sl<CheckInUsecase>(),
+      hasCheckedInTodayUsecase: sl<HasCheckedInTodayUsecase>(),
     ),
   );
 

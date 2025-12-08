@@ -57,8 +57,11 @@ class ActiveChallengeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = context.watch<ChallengeProvider>().isLoading;
-    final hasCheckedToday = context.watch<ChallengeProvider>().hasCheckedInToday(userChallenge.id);
+    final challengeProvider = context.watch<ChallengeProvider>();
+    final isLoading = challengeProvider.isLoading;
+    // Gunakan sync version untuk immediate UI update
+    // Provider akan update dari database di background saat load
+    final hasCheckedToday = challengeProvider.hasCheckedInTodaySync(userChallenge.id);
     final totalDays = userChallenge.endDate == null
         ? userChallenge.currentDay
         : (userChallenge.endDate!.difference(userChallenge.startDate).inDays + 1).clamp(1, 3650);
@@ -285,7 +288,7 @@ class ActiveChallengeCard extends StatelessWidget {
               width: double.infinity,
               child: FilledButton.icon(
                 icon: Icon(hasCheckedToday ? Icons.check_circle : Icons.thumb_up_outlined),
-                label: Text(hasCheckedToday ? 'Sudah Check-in Hari Ini' : 'Tandai Berhasil'),
+                label: Text(hasCheckedToday ? 'Sudah Check-in Hari Ini' : 'Mulai Hari Ini'),
                 style: FilledButton.styleFrom(
                   backgroundColor: categoryColor,
                   foregroundColor: Colors.white,
@@ -321,6 +324,10 @@ class ActiveChallengeCard extends StatelessWidget {
                           }
                           return;
                         }
+                        // Pastikan state ter-update setelah check-in
+                        // Provider sudah memanggil notifyListeners() di checkIn method
+                        // Widget akan otomatis rebuild karena menggunakan context.watch
+                        // Tidak perlu memanggil setState karena widget sudah menggunakan context.watch
                         // Update poin saja; streak mengikuti tanggal riil
                         context.read<AuthProvider>().applyStatsUpdate(
                               totalPoints: res.totalPoints,

@@ -5,6 +5,7 @@ import '../../domain/usecases/get_all_challenges_usecase.dart';
 import '../../domain/usecases/get_active_challenge_usecase.dart';
 import '../../domain/usecases/start_challenge_usecase.dart';
 import '../../domain/usecases/check_in_usecase.dart';
+import '../../domain/usecases/has_checked_in_today_usecase.dart';
 import '../../domain/entities/check_in_result.dart';
 
 /// ChallengeProvider untuk mengelola state challenge
@@ -25,6 +26,7 @@ class ChallengeProvider extends ChangeNotifier {
   /// Instance dari StartChallengeUsecase
   final StartChallengeUsecase startChallengeUsecase;
   final CheckInUsecase checkInUsecase;
+  final HasCheckedInTodayUsecase hasCheckedInTodayUsecase;
 
   /// Constructor untuk ChallengeProvider
   /// Menggunakan dependency injection untuk use cases
@@ -33,6 +35,7 @@ class ChallengeProvider extends ChangeNotifier {
     required this.getActiveChallengeUsecase,
     required this.startChallengeUsecase,
     required this.checkInUsecase,
+    required this.hasCheckedInTodayUsecase,
   });
 
   /// List challenges yang tersedia
@@ -71,7 +74,41 @@ class ChallengeProvider extends ChangeNotifier {
   /// Getter untuk selected category
   String? get selectedCategory => _selectedCategory;
 
-  bool hasCheckedInToday(String userChallengeId) {
+  /// Check if user has checked in today
+  /// First checks memory (_lastCheckInDate), then checks database if not found
+  /// This ensures persistence across app restarts and logins
+  Future<bool> hasCheckedInToday(String userChallengeId) async {
+    // First check memory cache
+    final d = _lastCheckInDate[userChallengeId];
+    if (d != null) {
+      final now = DateTime.now();
+      if (d.year == now.year && d.month == now.month && d.day == now.day) {
+        return true;
+      }
+    }
+    
+    // If not in memory, check database
+    try {
+      final result = await hasCheckedInTodayUsecase(userChallengeId);
+      return result.fold(
+        (failure) => false, // If error, assume not checked in
+        (hasChecked) {
+          // Update memory cache if checked in
+          if (hasChecked) {
+            _lastCheckInDate[userChallengeId] = DateTime.now();
+          }
+          return hasChecked;
+        },
+      );
+    } catch (e) {
+      // If error, assume not checked in
+      return false;
+    }
+  }
+  
+  /// Synchronous version for immediate UI updates (uses memory cache only)
+  /// Use this for initial render, then async version will update from database
+  bool hasCheckedInTodaySync(String userChallengeId) {
     final d = _lastCheckInDate[userChallengeId];
     if (d == null) return false;
     final now = DateTime.now();
@@ -133,14 +170,14 @@ class ChallengeProvider extends ChangeNotifier {
     final act = await getActiveChallengeUsecase(
       GetActiveChallengeParams(category: category),
     );
-    act.fold(
+    await act.fold(
       /// Jika gagal (Left = Failure)
-      (failure) {
+      (failure) async {
         _error = failure.message;
         _active.clear();
       },
       /// Jika berhasil (Right = List<UserChallenge>)
-      (active) {
+      (active) async {
         _active.clear();
         // Recalculate currentDay based on real-time date difference
         // This ensures currentDay is always correct, regardless of database value
@@ -165,6 +202,20 @@ class ChallengeProvider extends ChangeNotifier {
             createdAt: challenge.createdAt,
           );
           _active.add(updatedChallenge);
+          
+          // Load check-in status from database for each challenge
+          // This ensures persistence across app restarts and logins
+          final hasChecked = await hasCheckedInTodayUsecase(challenge.id);
+          hasChecked.fold(
+            (failure) {
+              // If error, don't update cache (keep as is)
+            },
+            (checked) {
+              if (checked) {
+                _lastCheckInDate[challenge.id] = DateTime.now();
+              }
+            },
+          );
         }
       },
     );
@@ -269,6 +320,7 @@ class ChallengeProvider extends ChangeNotifier {
     // Apply state updates
     if (result != null) {
       // Mark as checked-in today (even if server says already checked-in)
+      // PASTIKAN di-set SEBELUM update challenge untuk memastikan hasCheckedInToday() return true
       _lastCheckInDate[userChallengeId] = DateTime.now();
 
       // Replace updated challenge in active list or remove if completed
@@ -297,10 +349,17 @@ class ChallengeProvider extends ChangeNotifier {
       } else {
         _active[idx] = updatedChallenge;
       }
+    } else {
+      // Jika result null (error), tetap update _lastCheckInDate jika sudah pernah check-in hari ini
+      // Ini untuk memastikan UI tetap menampilkan status yang benar
+      // Tapi hanya jika error bukan karena "sudah check-in hari ini"
+      if (_error != null && _error!.contains('sudah check-in')) {
+        _lastCheckInDate[userChallengeId] = DateTime.now();
+      }
     }
 
     _loading = false;
-    notifyListeners();
+    notifyListeners(); // PASTIKAN notifyListeners() dipanggil SETELAH semua state update
     return result;
   }
 }

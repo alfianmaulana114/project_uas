@@ -2,13 +2,14 @@
 /// Digunakan untuk blocking aplikasi
 class AppPackageMapping {
   static const Map<String, String> _packageMap = {
-    // Social Media Apps
+    // Social Media Apps - DIPERKUAT: Package names yang benar untuk blocking efektif
     'TikTok': 'com.zhiliaoapp.musically',
     'Instagram': 'com.instagram.android',
     'Facebook': 'com.facebook.katana',
     'Snapchat': 'com.snapchat.android',
     'Twitter': 'com.twitter.android',
     'X (Twitter)': 'com.twitter.android',
+    'X': 'com.twitter.android', // Alias untuk X (Twitter baru)
     'WhatsApp': 'com.whatsapp',
     'Telegram': 'org.telegram.messenger',
     'LinkedIn': 'com.linkedin.android',
