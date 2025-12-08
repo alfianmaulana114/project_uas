@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../app_blocking/presentation/providers/app_blocking_provider.dart';
+import '../../../app_blocking/domain/models/app_package_mapping.dart';
 
 /// Model sederhana untuk mewakili status aplikasi sosial media.
 class SocialAppUsage {
@@ -55,23 +58,118 @@ class _SocialMediaChallengePanelState extends State<SocialMediaChallengePanel> {
     }
   }
 
-  void _toggle(SocialAppUsage app) {
+  Future<void> _toggle(SocialAppUsage app) async {
+    final blockingProvider = context.read<AppBlockingProvider>();
+    
+    // Cek apakah accessibility service sudah diaktifkan
+    if (!blockingProvider.isAccessibilityServiceEnabled) {
+      final shouldEnable = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Aktifkan Accessibility Service'),
+          content: const Text(
+            'Untuk memblokir aplikasi, Anda perlu mengaktifkan Accessibility Service terlebih dahulu. '
+            'Aplikasi akan membuka pengaturan untuk Anda.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Aktifkan'),
+            ),
+          ],
+        ),
+      );
+      
+      if (shouldEnable == true) {
+        await blockingProvider.openAccessibilitySettings();
+        return;
+      } else {
+        return;
+      }
+    }
+    
     final index = _apps.indexWhere((a) => a.name == app.name);
     if (index == -1) return;
+    
+    // Dapatkan package name dari mapping
+    final packageName = AppPackageMapping.getPackageName(app.name);
+    if (packageName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Aplikasi ${app.name} tidak didukung untuk blocking.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    
     final updated = app.copyWith(isBlocked: !app.isBlocked);
     setState(() {
       _apps[index] = updated;
     });
+    
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          updated.isBlocked ? '${app.name} diblokir.' : '${app.name} dibuka.',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    
+    // Update blocking service dengan package name yang benar
+    if (updated.isBlocked) {
+      // Enable blocking jika belum
+      if (!blockingProvider.isBlockingEnabled) {
+        await blockingProvider.setBlockingEnabled(true);
+      }
+      
+      // Tambahkan ke daftar block
+      final success = await blockingProvider.addBlockedApp(packageName);
+      if (success) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('${app.name} diblokir.'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        // Rollback jika gagal
+        setState(() {
+          _apps[index] = app;
+        });
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Gagal memblokir ${app.name}. ${blockingProvider.error ?? ""}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } else {
+      // Hapus dari daftar block
+      final success = await blockingProvider.removeBlockedApp(packageName);
+      if (success) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('${app.name} dibuka.'),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else {
+        // Rollback jika gagal
+        setState(() {
+          _apps[index] = app;
+        });
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Gagal membuka ${app.name}. ${blockingProvider.error ?? ""}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override

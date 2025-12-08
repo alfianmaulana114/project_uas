@@ -9,6 +9,7 @@ import 'features/challenge/presentation/providers/challenge_provider.dart';
 import 'features/reward/presentation/providers/reward_provider.dart';
 import 'features/analytics/presentation/providers/analytics_provider.dart';
 import 'features/journal/presentation/providers/journal_provider.dart';
+import 'features/app_blocking/presentation/providers/app_blocking_provider.dart';
 
 /// Main entry point aplikasi
 /// Mengikuti konsep Single Responsibility Principle
@@ -66,6 +67,10 @@ class MyApp extends StatelessWidget {
         /// JournalProvider untuk fitur Catatan Mood
         ChangeNotifierProvider(
           create: (_) => di.sl<JournalProvider>(),
+        ),
+        /// AppBlockingProvider untuk fitur Blocking Aplikasi
+        ChangeNotifierProvider(
+          create: (_) => AppBlockingProvider()..initialize(),
         ),
       ],
       child: MaterialApp(

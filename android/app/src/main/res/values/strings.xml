@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Detox Social Media</string>
+    <string name="accessibility_service_description">Layanan ini diperlukan untuk memblokir aplikasi yang ditandai sebagai diblokir. Layanan ini akan mendeteksi ketika aplikasi yang diblokir dibuka dan menampilkan layar blocking.</string>
+</resources>
+
