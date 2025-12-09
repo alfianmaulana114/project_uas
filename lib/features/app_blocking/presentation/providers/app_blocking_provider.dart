@@ -148,6 +148,19 @@ class AppBlockingProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // PENTING: Jika ingin enable blocking, pastikan Accessibility Service sudah aktif
+      if (enabled) {
+        // Cek ulang status accessibility service
+        await checkAccessibilityService();
+        
+        if (!_isAccessibilityServiceEnabled) {
+          _error = 'Accessibility Service belum diaktifkan. Silakan aktifkan di Settings → Accessibility terlebih dahulu.';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+      }
+      
       final success = await AppBlockingService.setBlockingEnabled(enabled);
       if (success) {
         _isBlockingEnabled = enabled;

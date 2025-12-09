@@ -1,0 +1,9 @@
+# Template untuk key.properties
+# Copy file ini menjadi key.properties dan isi dengan informasi keystore Anda
+# JANGAN commit file key.properties ke git!
+
+storePassword=your_keystore_password
+keyPassword=your_key_password
+keyAlias=upload
+storeFile=../app/upload-keystore.jks
+

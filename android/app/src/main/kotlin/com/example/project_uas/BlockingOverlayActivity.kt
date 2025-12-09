@@ -63,7 +63,7 @@ class BlockingOverlayActivity : Activity() {
             setTextColor(Color.WHITE)
             gravity = android.view.Gravity.CENTER
             setPadding(0, 10, 0, 30)
-            lineSpacing = 4f, 1.2f
+            setLineSpacing(4f, 1.2f)
         }
         
         val backButton = Button(this).apply {
