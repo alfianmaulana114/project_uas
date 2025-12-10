@@ -186,5 +186,16 @@ class AppBlockingProvider extends ChangeNotifier {
       loadInstalledApps(),
     ]);
   }
+
+  /// Refresh status - dipanggil ketika aplikasi kembali ke foreground
+  Future<void> refreshStatus() async {
+    await checkAccessibilityService();
+    // Jika blocking enabled tapi service tidak aktif, nonaktifkan blocking
+    if (_isBlockingEnabled && !_isAccessibilityServiceEnabled) {
+      _isBlockingEnabled = false;
+      await AppBlockingService.setBlockingEnabled(false);
+      notifyListeners();
+    }
+  }
 }
 

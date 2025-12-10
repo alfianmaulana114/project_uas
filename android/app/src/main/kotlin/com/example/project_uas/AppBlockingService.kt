@@ -26,15 +26,23 @@ class AppBlockingService : AccessibilityService() {
         
         fun updateBlockedPackages(packages: Set<String>) {
             blockedPackages = packages
-            Log.d(TAG, "Updated blocked packages: $packages")
+            Log.d(TAG, "========== UPDATED BLOCKED PACKAGES ==========")
+            Log.d(TAG, "Packages: $packages")
             Log.d(TAG, "Total blocked apps: ${packages.size}")
+            Log.d(TAG, "Blocking enabled: $isBlockingEnabled")
         }
         
         fun setBlockingEnabled(enabled: Boolean) {
             isBlockingEnabled = enabled
-            Log.d(TAG, "Blocking enabled: $enabled")
-            if (enabled) {
-                Log.d(TAG, "Monitoring started for ${blockedPackages.size} blocked apps")
+            Log.d(TAG, "========== BLOCKING ENABLED: $enabled ==========")
+            Log.d(TAG, "Blocked packages: $blockedPackages")
+            Log.d(TAG, "Total blocked apps: ${blockedPackages.size}")
+            if (enabled && blockedPackages.isNotEmpty()) {
+                Log.d(TAG, "✅ Monitoring ACTIVE for: $blockedPackages")
+            } else if (enabled) {
+                Log.w(TAG, "⚠️ Blocking enabled but NO apps blocked!")
+            } else {
+                Log.d(TAG, "❌ Blocking DISABLED")
             }
         }
     }
@@ -52,13 +60,22 @@ class AppBlockingService : AccessibilityService() {
     
     override fun onServiceConnected() {
         super.onServiceConnected()
-        Log.d(TAG, "AppBlockingService connected")
+        Log.d(TAG, "========== AppBlockingService CONNECTED ==========")
+        Log.d(TAG, "Blocking enabled: $isBlockingEnabled")
+        Log.d(TAG, "Blocked packages: $blockedPackages")
+        Log.d(TAG, "Total blocked apps: ${blockedPackages.size}")
+        
         // Mulai monitoring berkelanjutan
         handler.post(monitoringRunnable)
+        Log.d(TAG, "Monitoring started")
     }
     
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (!isBlockingEnabled || blockedPackages.isEmpty()) {
+        if (!isBlockingEnabled) {
+            return
+        }
+        
+        if (blockedPackages.isEmpty()) {
             return
         }
         
@@ -73,14 +90,16 @@ class AppBlockingService : AccessibilityService() {
             
             if (eventTypes.contains(it.eventType)) {
                 val packageName = it.packageName?.toString()
-                if (packageName != null && blockedPackages.contains(packageName)) {
-                    // Cegah spam blocking untuk package yang sama dalam waktu singkat (500ms)
-                    val currentTime = System.currentTimeMillis()
-                    if (packageName != lastBlockedPackage || currentTime - lastBlockTime > 500) {
-                        Log.d(TAG, "Blocked app detected via event: $packageName")
-                        blockApp(packageName)
-                        lastBlockedPackage = packageName
-                        lastBlockTime = currentTime
+                if (packageName != null) {
+                    if (blockedPackages.contains(packageName)) {
+                        // Cegah spam blocking untuk package yang sama dalam waktu singkat (500ms)
+                        val currentTime = System.currentTimeMillis()
+                        if (packageName != lastBlockedPackage || currentTime - lastBlockTime > 500) {
+                            Log.w(TAG, "🚫 BLOCKED APP DETECTED via event: $packageName (eventType: ${it.eventType})")
+                            blockApp(packageName)
+                            lastBlockedPackage = packageName
+                            lastBlockTime = currentTime
+                        }
                     }
                 }
             }
@@ -97,19 +116,23 @@ class AppBlockingService : AccessibilityService() {
             val rootWindow = rootInActiveWindow
             if (rootWindow != null) {
                 val packageName = rootWindow.packageName?.toString()
-                if (packageName != null && blockedPackages.contains(packageName)) {
-                    val currentTime = System.currentTimeMillis()
-                    if (packageName != lastBlockedPackage || currentTime - lastBlockTime > 500) {
-                        Log.d(TAG, "Blocked app detected via root window monitoring: $packageName")
-                        blockApp(packageName)
-                        lastBlockedPackage = packageName
-                        lastBlockTime = currentTime
+                if (packageName != null) {
+                    // Log setiap aplikasi yang dibuka untuk debugging
+                    if (blockedPackages.contains(packageName)) {
+                        val currentTime = System.currentTimeMillis()
+                        if (packageName != lastBlockedPackage || currentTime - lastBlockTime > 500) {
+                            Log.w(TAG, "🚫 BLOCKED APP DETECTED: $packageName")
+                            blockApp(packageName)
+                            lastBlockedPackage = packageName
+                            lastBlockTime = currentTime
+                        }
                     }
                 }
             }
         } catch (e: Exception) {
             // Ignore errors, monitoring akan terus berjalan
             // Accessibility event akan tetap menangkap perubahan aplikasi
+            Log.d(TAG, "Error in checkCurrentApp: ${e.message}")
         }
     }
     

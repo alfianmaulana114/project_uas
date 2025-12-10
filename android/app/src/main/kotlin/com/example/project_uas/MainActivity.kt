@@ -55,15 +55,34 @@ class MainActivity: FlutterActivity() {
     }
     
     private fun isAccessibilityServiceEnabled(): Boolean {
-        val accessibilityManager = getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
-        val enabledServices = accessibilityManager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
-        
-        for (service in enabledServices) {
-            if (service.resolveInfo.serviceInfo.packageName == packageName) {
-                return true
+        try {
+            val accessibilityManager = getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+            val enabledServices = accessibilityManager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+            
+            Log.d(TAG, "Checking accessibility services. Package name: $packageName")
+            Log.d(TAG, "Total enabled services: ${enabledServices.size}")
+            
+            for (service in enabledServices) {
+                val servicePackage = service.resolveInfo.serviceInfo.packageName
+                val serviceName = service.resolveInfo.serviceInfo.name
+                Log.d(TAG, "Found service: package=$servicePackage, name=$serviceName")
+                
+                // Cek package name dan service name
+                if (servicePackage == packageName) {
+                    // Cek apakah ini service kita (AppBlockingService)
+                    if (serviceName.contains("AppBlockingService") || serviceName == "$packageName.AppBlockingService") {
+                        Log.d(TAG, "AppBlockingService is ENABLED")
+                        return true
+                    }
+                }
             }
+            
+            Log.d(TAG, "AppBlockingService is NOT ENABLED")
+            return false
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking accessibility service: ${e.message}", e)
+            return false
         }
-        return false
     }
     
     private fun openAccessibilitySettings() {
